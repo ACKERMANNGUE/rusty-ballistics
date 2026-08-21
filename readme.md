@@ -126,8 +126,8 @@ cargo run --release
 - [x] Pause, reset flow
 - [x] UI for stats / debugging
 - [x] Generate a new random bullet when pressing a key
-- [ ] Collision detection between bullets and objects
-- [ ] Collision response and impact effects
+- [x] Collision detection between bullets and objects
+- [x] Collision response and impact effects
 - [ ] Wind
 - [ ] Better projectile physics tuning
 - [ ] Multiple "weapon" types or "firing modes"
