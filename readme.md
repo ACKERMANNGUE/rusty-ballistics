@@ -130,7 +130,7 @@ cargo run --release
 
 ### Missing / planned
 
-- [ ] Generate a new bullet when pressing a key
+- [ ] Generate a new random bullet when pressing a key
 - [ ] Collision detection between bullets and objects
 - [ ] Collision response and impact effects
 - [ ] Better projectile physics tuning
@@ -141,7 +141,7 @@ cargo run --release
 
 ## License
 
-This project is currently a personal learning and development project. Add a license if you plan to share it publicly or open it to other contributors.
+This project is currently a personal learning and development project. 
 
 ## Summary
 
