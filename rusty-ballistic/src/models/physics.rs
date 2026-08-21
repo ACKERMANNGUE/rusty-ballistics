@@ -32,7 +32,7 @@ impl Physics {
             let new_position = *bullet.get_position() + *bullet.get_velocity() * delta_time;
 
             if self.is_out_of_bounds(&new_position, world_size, bullet.get_radius()) {
-                println!("Bullet {} has left the world boundaries", bullet.get_name());
+                // println!("Bullet {} has left the world boundaries", bullet.get_name());
                 // TODO: Handle bullet leaving the world boundaries (remove it from the world)
                 bullet.set_velocity(glam::Vec2::new(0.0, 0.0));
                 bullet.set_mass(0.0);

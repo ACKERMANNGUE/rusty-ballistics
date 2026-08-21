@@ -7,8 +7,8 @@ use models::physics::Physics;
 
 const GRAVITY: f32 = 9.81;
 const AIR_RESISTANCE: f32 = 0.1;
-const WORLD_SIZE: (f32, f32) = (800.0, 600.0);
-const HZ: f32 = 60.0;
+const WORLD_SIZE: (f32, f32) = (1920.0, 1080.0);
+const HZ: f32 = 144.0;
 const DELTA_TIME: f32 = 1.0 / HZ;
 
 use bevy::prelude::*;
@@ -19,16 +19,32 @@ fn main() {
     App::new()
         .insert_resource(ClearColor(Color::srgb(0.05, 0.05, 0.08)))
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, setup)
+        .insert_resource(Time::<Fixed>::from_hz(HZ as f64))
+        .add_systems(
+            Startup,
+            (
+                setup,
+                resize_window,
+            ),
+        )
+        .add_systems(FixedUpdate, update_simulation)
         .add_systems(
             Update,
             (
-                update_simulation,
                 sync_bullet_transforms,
                 draw_world_bounds,
-            ).chain(),
+            ),
         )
         .run();
+}
+
+fn resize_window(
+    mut window: Single<&mut Window>,
+) {
+    window.resolution.set(
+        WORLD_SIZE.0,
+        WORLD_SIZE.1,
+    );
 }
 
 fn setup(
@@ -49,9 +65,9 @@ fn setup(
 
     let bullet_2 = Bullet::new(
         String::from("B2"),
-        Vec2::new(120.0, -300.0),
-        Vec2::new(-15.0, 275.0),
-        0.009,
+        Vec2::new(120.0, -200.0),
+        Vec2::new(-150.0, 275.0),
+        0.09,
         (0.0, 1.0, 0.0)
     );
 
