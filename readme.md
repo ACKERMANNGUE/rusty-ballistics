@@ -115,8 +115,6 @@ cargo run --release
 
 ## Current status checklist
 
-### Done
-
 - [x] Rust project created
 - [x] Basic project structure defined
 - [x] Bullet model created
@@ -127,14 +125,11 @@ cargo run --release
 - [x] Bullet trail rendering
 - [x] Pause, reset flow
 - [x] UI for stats / debugging
-
-### Missing / planned
-
-- [ ] Generate a new random bullet when pressing a key
+- [x] Generate a new random bullet when pressing a key
 - [ ] Collision detection between bullets and objects
 - [ ] Collision response and impact effects
-- [ ] Better projectile physics tuning
 - [ ] Wind
+- [ ] Better projectile physics tuning
 - [ ] Multiple "weapon" types or "firing modes"
 - [ ] Better camera and scene management
 - [ ] Audio feedback
@@ -148,6 +143,14 @@ In order to pause the game, press the spacebar key.
 ### Reset simulation
 
 In order to reset the game, press the R key.
+
+### Clear world
+
+In order to clean the world, press the C key.
+
+### Create new bullet
+
+In order to create a new random bullet, press the F key.
 
 ## License
 

@@ -67,3 +67,49 @@ pub fn regenerate_bullets(
         );
     }
 }
+
+pub fn create_new_bullet(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut commands: Commands,
+    mut world: ResMut<SimulationWorld>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    if !keyboard.just_pressed(KeyCode::KeyF) {
+        return;
+    }
+
+    let bullet = generate_random_bullet();
+
+    let index = world.get_bullets_read().len();
+
+    spawn_bullet_entity(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        &bullet,
+        index,
+    );
+
+    world.add_bullet(bullet);
+}
+
+pub fn clear_bullets(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut commands: Commands,
+    mut world: ResMut<SimulationWorld>,
+    bullet_entities: Query<
+        Entity,
+        With<BulletEntity>,
+    >,
+) {
+    if !keyboard.just_pressed(KeyCode::KeyC) {
+        return;
+    }
+
+    for entity in &bullet_entities {
+        commands.entity(entity).despawn();
+    }
+
+    world.get_bullets().clear();
+}

@@ -12,6 +12,8 @@ use config::HZ;
 use systems::input::{
     regenerate_bullets,
     toggle_pause,
+    create_new_bullet,
+    clear_bullets,
 };
 
 use systems::rendering::{
@@ -80,6 +82,8 @@ fn main() {
                 draw_bullet_trails,
                 draw_world_bounds,
                 update_ui,
+                create_new_bullet,
+                clear_bullets,
             ),
         )
         .run();
