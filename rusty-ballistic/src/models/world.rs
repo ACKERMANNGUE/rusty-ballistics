@@ -1,13 +1,13 @@
 use crate::models::bullet::Bullet;
 use crate::models::physics::Physics;
 
-pub struct World {
+pub struct SimulationWorld {
     bullets: Vec<Bullet>,
     size: (f32, f32),
     physics: Physics,
 }
 
-impl World {
+impl SimulationWorld {
     pub fn new(size: (f32, f32), physics: Physics) -> Self {
         Self {
             bullets: Vec::new(),
@@ -16,12 +16,12 @@ impl World {
         }
     }
 
-    // pub fn get_size(&self) -> (f32, f32) {
-    //     self.size
-    // }
-
     pub fn add_bullet(&mut self, bullet: Bullet) {
         self.bullets.push(bullet);
+    }
+
+    pub fn get_bullets(&mut self) -> &mut Vec<Bullet> {
+        &mut self.bullets
     }
 
     pub fn update(&mut self) {

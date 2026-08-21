@@ -1,0 +1,43 @@
+# Rust / Cargo build artifacts
+/target/
+**/target/
+**/debug/
+**/release/
+**/incremental/
+**/.fingerprint/
+**/.cargo/
+**/rustc_info.json
+
+# Common compiled Rust outputs
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.obj
+*.lib
+*.rlib
+*.rmeta
+*.d
+*.exe
+*.pdb
+
+# Editor / IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+
+# Local runtime / generated files
+saves/
+profiles/
+output/
+output.txt
+*.bin

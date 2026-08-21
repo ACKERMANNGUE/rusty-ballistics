@@ -5,16 +5,26 @@ pub struct Bullet {
     position: Vec2,
     velocity: Vec2,
     mass: f32,
+    color: (f32, f32, f32),
 }
 
 impl Bullet {
-    pub fn new(name: String, position: Vec2, velocity: Vec2, mass: f32) -> Self {
+    pub fn new(name: String, position: Vec2, velocity: Vec2, mass: f32, color: (f32, f32, f32)) -> Self {
         Self {
             name,
             position,
             velocity,
-            mass
+            mass,
+            color,  
         }
+    }
+
+    pub fn set_color(&mut self, color: (f32, f32, f32)) {
+        self.color = color;
+    }
+
+    pub fn get_color(&self) -> (f32, f32, f32) {
+        self.color
     }
 
     pub fn get_name(&self) -> &String {
@@ -29,9 +39,9 @@ impl Bullet {
         &self.velocity
     }
 
-    // pub fn get_mass(&self) -> f32 {
-    //     self.mass
-    // }
+    pub fn get_mass(&self) -> f32 {
+        self.mass
+    }
 
     pub fn set_position(&mut self, position: Vec2) {
         self.position = position;
