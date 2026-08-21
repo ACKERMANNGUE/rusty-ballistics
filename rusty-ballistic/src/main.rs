@@ -12,14 +12,22 @@ const HZ: f32 = 60.0;
 const DELTA_TIME: f32 = 1.0 / HZ;
 
 use bevy::prelude::*;
-
-const BASE_BULLET_RADIUS: f32 = 10.0;
+mod components;
+use components::bullet_entity::BulletEntity;
 
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::srgb(0.05, 0.05, 0.08)))
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
+        .add_systems(
+            Update,
+            (
+                update_simulation,
+                sync_bullet_transforms,
+                draw_world_bounds,
+            ).chain(),
+        )
         .run();
 }
 
@@ -36,7 +44,7 @@ fn setup(
         Vec2::new(-30.0, 200.0),
         Vec2::new(100.0, -50.0),
         0.02,
-        (1.0, 0.0, 0.0), 
+        (1.0, 0.0, 0.0)
     );
 
     let bullet_2 = Bullet::new(
@@ -44,7 +52,7 @@ fn setup(
         Vec2::new(120.0, -300.0),
         Vec2::new(-15.0, 275.0),
         0.009,
-        (0.0, 1.0, 0.0), 
+        (0.0, 1.0, 0.0)
     );
 
     let bullet_3 = Bullet::new(
@@ -52,7 +60,7 @@ fn setup(
         Vec2::new(0.0, 0.0),
         Vec2::new(0.0, 0.0),
         0.1,
-        (0.0, 0.0, 1.0), 
+        (0.0, 0.0, 1.0)
     );
 
     world.add_bullet(bullet_1);
@@ -61,13 +69,50 @@ fn setup(
 
     commands.spawn(Camera2d);
 
-    for bullet in world.get_bullets() {
-        let radius = (BASE_BULLET_RADIUS * bullet.get_mass() * 10.0) + BASE_BULLET_RADIUS;
+    for (index, bullet) in world.get_bullets().iter().enumerate() {
+        let radius = bullet.get_radius();
         let color = Color::srgb(bullet.get_color().0, bullet.get_color().1, bullet.get_color().2);
         commands.spawn((
+            BulletEntity { index }, 
             Mesh2d(meshes.add(Circle::new(radius)).into()),
             MeshMaterial2d(materials.add(color)),
             Transform::from_xyz(bullet.get_position().x, bullet.get_position().y, 0.0),
         ));
     }
+
+    commands.insert_resource(world);
+}
+
+fn update_simulation(
+    mut world: ResMut<SimulationWorld>,
+) {
+    world.update();
+}
+
+fn sync_bullet_transforms(
+    world: Res<SimulationWorld>,
+    mut query: Query<(&BulletEntity, &mut Transform)>,
+) {
+    let bullets = world.get_bullets_read();
+    for (bullet_entity, mut transform) in &mut query {
+        let bullet = &bullets[bullet_entity.index];
+        let position = bullet.get_position();
+
+        transform.translation.x = position.x;
+        transform.translation.y = position.y;
+    }
+}
+
+fn draw_world_bounds(
+    mut gizmos: Gizmos,
+    world: Res<SimulationWorld>,
+) {
+    gizmos.rect_2d(
+        Isometry2d::IDENTITY,
+        bevy::prelude::Vec2::new(
+            world.get_size().0,
+            world.get_size().1,
+        ),
+        Color::WHITE,
+    );
 }

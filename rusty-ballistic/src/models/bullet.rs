@@ -1,11 +1,14 @@
 use glam::Vec2;
 
+const BASE_BULLET_RADIUS: f32 = 10.0;
+
 pub struct Bullet {
     name: String,
     position: Vec2,
     velocity: Vec2,
     mass: f32,
     color: (f32, f32, f32),
+    radius: f32,
 }
 
 impl Bullet {
@@ -15,8 +18,21 @@ impl Bullet {
             position,
             velocity,
             mass,
-            color,  
+            color,
+            radius: Self::compute_bullet_radius(mass),
         }
+    }
+
+    fn compute_bullet_radius(mass: f32) -> f32 {
+        (BASE_BULLET_RADIUS * mass * 10.0) + BASE_BULLET_RADIUS
+    }
+
+    pub fn set_mass(&mut self, mass: f32) {
+        self.mass = mass;
+    }
+
+    pub fn get_radius(&self) -> f32 {
+        self.radius
     }
 
     pub fn set_color(&mut self, color: (f32, f32, f32)) {

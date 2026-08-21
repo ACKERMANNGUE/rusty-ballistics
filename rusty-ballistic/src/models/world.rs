@@ -1,6 +1,9 @@
+use bevy::prelude::Resource;
+
 use crate::models::bullet::Bullet;
 use crate::models::physics::Physics;
 
+#[derive(Resource)]
 pub struct SimulationWorld {
     bullets: Vec<Bullet>,
     size: (f32, f32),
@@ -20,24 +23,20 @@ impl SimulationWorld {
         self.bullets.push(bullet);
     }
 
+    pub fn get_bullets_read(&self) -> &Vec<Bullet> {
+        &self.bullets
+    }
+
     pub fn get_bullets(&mut self) -> &mut Vec<Bullet> {
         &mut self.bullets
     }
 
+    pub fn get_size(&self) -> (f32, f32) {
+        self.size
+    }
+
     pub fn update(&mut self) {
-        // might not be the best place to check for stagnation, but it works for now
-        // TODO: remove bullets that have stagnated from the world
-        let mut stagnated_counts = 0;
-        while !self.is_frozen(stagnated_counts, self.bullets.len()) {
-            for bullet in &self.bullets {
-                if self.check_bullet_stagnation(bullet) {
-                    stagnated_counts += 1;
-                    println!("Bullet {} has stagnated", bullet.get_name());
-                }
-            }
-            self.physics.update(&mut self.bullets, self.size);
-            self.display_bullets_in_term();
-        }
+        self.physics.update(&mut self.bullets, self.size);
     }
 
     fn is_frozen(&self, stagnated_counts: usize, total_bullets: usize) -> bool {

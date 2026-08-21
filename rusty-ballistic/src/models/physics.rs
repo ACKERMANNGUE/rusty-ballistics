@@ -25,13 +25,17 @@ impl Physics {
         let air_resistance = self.air_resistance;
         let delta_time = self.delta_time;
 
+        let half_width = world_size.0 / 2.0;
+        let half_height = world_size.1 / 2.0;
+
         for bullet in bullets.iter_mut() {
             let new_position = *bullet.get_position() + *bullet.get_velocity() * delta_time;
 
-            if new_position.x < 0.0 || new_position.x > world_size.0 || new_position.y < 0.0 || new_position.y > world_size.1 {
+            if self.is_out_of_bounds(&new_position, world_size, bullet.get_radius()) {
                 println!("Bullet {} has left the world boundaries", bullet.get_name());
                 // TODO: Handle bullet leaving the world boundaries (remove it from the world)
                 bullet.set_velocity(glam::Vec2::new(0.0, 0.0));
+                bullet.set_mass(0.0);
                 continue; 
             }
 
@@ -42,5 +46,12 @@ impl Physics {
             ));
             bullet.set_velocity(*bullet.get_velocity() * (1.0 - air_resistance * delta_time));
         }
+    }
+
+    fn is_out_of_bounds(&self, position: &glam::Vec2, world_size: (f32, f32), bullet_radius: f32) -> bool {
+        let half_width = world_size.0 / 2.0;
+        let half_height = world_size.1 / 2.0;
+
+        position.x - bullet_radius < -half_width || position.x + bullet_radius > half_width || position.y - bullet_radius < -half_height || position.y + bullet_radius > half_height
     }
 }
