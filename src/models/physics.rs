@@ -33,7 +33,7 @@ impl Physics {
         let delta_time = self.delta_time;
 
         for bullet in bullets.iter_mut() {
-            let new_position = *bullet.get_position() + *bullet.get_velocity() * delta_time;
+            let new_position = self.compute_new_position(bullet);
 
             if self.is_out_of_bounds(&new_position, world_size, bullet.get_radius()) {
                 bullet.set_velocity(glam::Vec2::new(0.0, 0.0));
@@ -41,102 +41,136 @@ impl Physics {
                 continue;
             }
 
-            bullet.set_position(new_position);
-            bullet.set_velocity(glam::Vec2::new(
-                bullet.get_velocity().x,
-                bullet.get_velocity().y - gravity * delta_time,
-            ));
-            bullet.set_velocity(*bullet.get_velocity() * (1.0 - air_resistance * delta_time));
+            self.set_new_position_and_velocity(bullet, new_position);
         }
 
         let grid_cell_size = 100.0;
-
         let spatial_grid = self.build_spatial_grid(bullets, world_size, grid_cell_size);
+        let (grid_width, grid_height) = self.compute_grid_size(world_size, grid_cell_size);
 
-        let grid_width = (world_size.0 / grid_cell_size).ceil() as usize;
+        for bullet_index in 0..bullets.len() {
+            let position = *bullets[bullet_index].get_position();
+            let (x_index, y_index) = self.compute_x_y_indices(&position, world_size, grid_cell_size);
 
-        let grid_height = (world_size.1 / grid_cell_size).ceil() as usize;
+            self.check_collisions_in_neighbours(
+                bullet_index,
+                x_index,
+                y_index,
+                grid_width,
+                grid_height,
+                &spatial_grid,
+                bullets,
+            );
+        }
+    }
 
-        for i in 0..bullets.len() {
-            let position = *bullets[i].get_position();
+    fn compute_x_y_indices(&self, position: &glam::Vec2, world_size: (f32, f32), cell_size: f32) -> (isize, isize) {
+        let x_index = ((position.x + world_size.0 / 2.0) / cell_size).floor() as isize;
+        let y_index = ((position.y + world_size.1 / 2.0) / cell_size).floor() as isize;
+        (x_index, y_index)
+    }
 
-            let x_index = ((position.x + world_size.0 / 2.0) / grid_cell_size).floor() as isize;
-            let y_index = ((position.y + world_size.1 / 2.0) / grid_cell_size).floor() as isize;
+    fn compute_grid_size(&self, world_size: (f32, f32), cell_size: f32) -> (usize, usize) {
+        let grid_width = (world_size.0 / cell_size).ceil() as usize;
+        let grid_height = (world_size.1 / cell_size).ceil() as usize;
+        (grid_width, grid_height)
+    }
 
-            for dx in -1..=1 {
-                for dy in -1..=1 {
-                    let neighbor_x = x_index + dx;
-                    let neighbor_y = y_index + dy;
+    fn compute_new_position(&self, bullet: &Bullet) -> glam::Vec2 {
+        *bullet.get_position() + *bullet.get_velocity() * self.delta_time
+    }
 
-                    if neighbor_x < 0 || neighbor_y < 0 {
+    fn set_new_position_and_velocity(&self, bullet: &mut Bullet, new_position: glam::Vec2) {
+        bullet.set_position(new_position);
+        bullet.set_velocity(glam::Vec2::new(
+                bullet.get_velocity().x,
+                bullet.get_velocity().y - self.gravity * self.delta_time,
+            ));
+        bullet.set_velocity(*bullet.get_velocity() * (1.0 - self.air_resistance * self.delta_time));
+    }
+
+    fn check_collisions_in_neighbours(
+        &self,
+        bullet_index: usize,
+        x_index: isize,
+        y_index: isize,
+        grid_width: usize,
+        grid_height: usize,
+        spatial_grid: &Vec<Vec<usize>>,
+        bullets: &mut Vec<Bullet>,
+    ) {
+        // use of isize for x_index and y_index allows us to check neighboring cells without worrying about underflow when subtracting 1
+        // compared to using usize which is unsigned and would underflow when subtracting 1 from 0
+        for dy in -1isize..=1 {
+            for dx in -1isize..=1 {
+                let neighbor_x = x_index + dx;
+                let neighbor_y = y_index + dy;
+
+                if neighbor_x < 0 || neighbor_y < 0 {
+                    continue;
+                }
+
+                if neighbor_x as usize >= grid_width || neighbor_y as usize >= grid_height {
+                    continue;
+                }
+
+                let cell_index = neighbor_y as usize * grid_width + neighbor_x as usize;
+
+                for &other_index in &spatial_grid[cell_index] {
+                    // Avoid self-collision and checking the same pair twice
+                    if other_index <= bullet_index {
                         continue;
                     }
 
-                    if neighbor_x as usize >= grid_width || neighbor_y as usize >= grid_height {
+                    let (left, right) = bullets.split_at_mut(other_index);
+
+                    let bullet = &mut left[bullet_index];
+                    let other_bullet = &mut right[0];
+                    let delta = *bullet.get_position() - *other_bullet.get_position();
+                    let distance_squared = delta.length_squared();
+                    if distance_squared == 0.0 {
+                        println!(
+                            "WARNING: Two bullets are at the same position, skipping collision resolution!"
+                        );
                         continue;
                     }
 
-                    let cell_index = neighbor_y as usize * grid_width + neighbor_x as usize;
-
-                    for &j in &spatial_grid[cell_index] {
-                        if j <= i {
-                            // made to avoid double checking and self-collision
-                            continue;
-                        }
-
-                        let (left, right) = bullets.split_at_mut(j);
-
-                        let bullet = &mut left[i];
-                        let other_bullet = &mut right[0];
-
-                        let delta = *bullet.get_position() - *other_bullet.get_position();
-                        let distance_squared = delta.length_squared();
-                        if distance_squared == 0.0 {
-                            println!("WARNING : Two bullets are at the same position, skipping collision resolution !");
-                            continue;
-                        }
-                        let combined_radius = bullet.get_radius() + other_bullet.get_radius();
-
-                        if distance_squared < combined_radius * combined_radius {
-                            if distance_squared == 0.0 {
-                                continue;
-                            }
-
-                            let mass_1 = bullet.get_mass();
-                            let mass_2 = other_bullet.get_mass();
-
-                            if mass_1 <= 0.0 || mass_2 <= 0.0 { 
-                                // TODO: Handle this case properly, maybe by removing the bullet from the simulation, maybe by adding a flag "dead" to the bullet,
-                                // maybe by doing something else. For now, we just skip the collision resolution.
-                                continue;
-                            }
-
-                            let position_1 = *bullet.get_position();
-                            let position_2 = *other_bullet.get_position();
-
-                            let velocity_1 = *bullet.get_velocity();
-                            let velocity_2 = *other_bullet.get_velocity();
-
-                            let direction = (position_2 - position_1).normalize();
-
-                            let relative_velocity = velocity_1 - velocity_2;
-
-                            let s = relative_velocity.dot(direction);
-
-                            if s <= 0.0 {
-                                continue;
-                            }
-
-                            let impulse = (2.0 * s) / ((1.0 / mass_1) + (1.0 / mass_2));
-
-                            bullet.set_velocity(velocity_1 - (impulse / mass_1) * direction);
-
-                            other_bullet.set_velocity(velocity_2 + (impulse / mass_2) * direction);
-                        }
+                    let combined_radius = bullet.get_radius() + other_bullet.get_radius();
+                    if distance_squared < combined_radius * combined_radius {
+                        self.compute_collision_response(bullet, other_bullet);
                     }
                 }
             }
         }
+    }
+
+    fn compute_collision_response(&self, bullet1: &mut Bullet, bullet2: &mut Bullet) {
+        let mass1 = bullet1.get_mass();
+        let mass2 = bullet2.get_mass();
+
+        if mass1 <= 0.0 || mass2 <= 0.0 {
+            // TODO: Handle this case properly, maybe by removing the bullet from the simulation, maybe by adding a flag "dead" to the bullet,
+            // maybe by doing something else. For now, we just skip the collision resolution.
+            return;
+        }
+
+        let position1 = *bullet1.get_position();
+        let position2 = *bullet2.get_position();
+
+        let velocity1 = *bullet1.get_velocity();
+        let velocity2 = *bullet2.get_velocity();
+
+        let direction = (position2 - position1).normalize();
+        let relative_velocity = velocity1 - velocity2;
+        let s = relative_velocity.dot(direction);
+
+        if s <= 0.0 {
+            return;
+        }
+
+        let impulse = (2.0 * s) / ((1.0 / mass1) + (1.0 / mass2));
+        bullet1.set_velocity(velocity1 - (impulse / mass1) * direction);
+        bullet2.set_velocity(velocity2 + (impulse / mass2) * direction);
     }
 
     fn build_spatial_grid(
