@@ -61,9 +61,9 @@ impl Bullet {
         &self.velocity
     }
 
-    // pub fn get_mass(&self) -> f32 {
-    //     self.mass
-    // }
+    pub fn get_mass(&self) -> f32 {
+        self.mass
+    }
 
     pub fn set_position(&mut self, position: Vec2) {
         self.position = position;

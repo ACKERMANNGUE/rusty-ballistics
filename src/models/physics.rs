@@ -79,7 +79,8 @@ impl Physics {
                     let cell_index = neighbor_y as usize * grid_width + neighbor_x as usize;
 
                     for &j in &spatial_grid[cell_index] {
-                        if j <= i { // made to avoid double checking and self-collision
+                        if j <= i {
+                            // made to avoid double checking and self-collision
                             continue;
                         }
 
@@ -90,14 +91,47 @@ impl Physics {
 
                         let delta = *bullet.get_position() - *other_bullet.get_position();
                         let distance_squared = delta.length_squared();
+                        if distance_squared == 0.0 {
+                            println!("WARNING : Two bullets are at the same position, skipping collision resolution !");
+                            continue;
+                        }
                         let combined_radius = bullet.get_radius() + other_bullet.get_radius();
 
                         if distance_squared < combined_radius * combined_radius {
-                            // dummy collision response swap velocities
-                            // TODO : implement proper collision response based on momentum, mass
-                            let velocity = *bullet.get_velocity();
-                            bullet.set_velocity(*other_bullet.get_velocity());
-                            other_bullet.set_velocity(velocity);
+                            if distance_squared == 0.0 {
+                                continue;
+                            }
+
+                            let mass_1 = bullet.get_mass();
+                            let mass_2 = other_bullet.get_mass();
+
+                            if mass_1 <= 0.0 || mass_2 <= 0.0 { 
+                                // TODO: Handle this case properly, maybe by removing the bullet from the simulation, maybe by adding a flag "dead" to the bullet,
+                                // maybe by doing something else. For now, we just skip the collision resolution.
+                                continue;
+                            }
+
+                            let position_1 = *bullet.get_position();
+                            let position_2 = *other_bullet.get_position();
+
+                            let velocity_1 = *bullet.get_velocity();
+                            let velocity_2 = *other_bullet.get_velocity();
+
+                            let direction = (position_2 - position_1).normalize();
+
+                            let relative_velocity = velocity_1 - velocity_2;
+
+                            let s = relative_velocity.dot(direction);
+
+                            if s <= 0.0 {
+                                continue;
+                            }
+
+                            let impulse = (2.0 * s) / ((1.0 / mass_1) + (1.0 / mass_2));
+
+                            bullet.set_velocity(velocity_1 - (impulse / mass_1) * direction);
+
+                            other_bullet.set_velocity(velocity_2 + (impulse / mass_2) * direction);
                         }
                     }
                 }
