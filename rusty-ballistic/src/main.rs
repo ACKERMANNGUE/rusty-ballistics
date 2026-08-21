@@ -14,6 +14,8 @@ const DELTA_TIME: f32 = 1.0 / HZ;
 use bevy::prelude::*;
 mod components;
 use components::bullet_entity::BulletEntity;
+use components::bullet_trail::BulletTrail;
+const TRAIL_MAX_POINTS: usize = 300;
 
 fn main() {
     App::new()
@@ -27,11 +29,18 @@ fn main() {
                 resize_window,
             ),
         )
-        .add_systems(FixedUpdate, update_simulation)
+        .add_systems(
+            FixedUpdate, 
+            (
+                update_simulation,
+                record_bullet_trails
+            ),
+        )
         .add_systems(
             Update,
             (
                 sync_bullet_transforms,
+                draw_bullet_trails,
                 draw_world_bounds,
             ),
         )
@@ -90,6 +99,7 @@ fn setup(
         let color = Color::srgb(bullet.get_color().0, bullet.get_color().1, bullet.get_color().2);
         commands.spawn((
             BulletEntity { index }, 
+            BulletTrail::new(TRAIL_MAX_POINTS),
             Mesh2d(meshes.add(Circle::new(radius)).into()),
             MeshMaterial2d(materials.add(color)),
             Transform::from_xyz(bullet.get_position().x, bullet.get_position().y, 0.0),
@@ -131,4 +141,47 @@ fn draw_world_bounds(
         ),
         Color::WHITE,
     );
+}
+
+fn record_bullet_trails(
+    world: Res<SimulationWorld>,
+    mut query: Query<(&BulletEntity, &mut BulletTrail)>,
+) {
+    let bullets = world.get_bullets_read();
+
+    for (bullet_entity, mut trail) in &mut query {
+        let bullet = &bullets[bullet_entity.index];
+        let position = bullet.get_position();
+
+        trail.push(bevy::prelude::Vec2::new(
+            position.x,
+            position.y,
+        ));
+    }
+}
+
+fn draw_bullet_trails(
+    mut gizmos: Gizmos,
+    world: Res<SimulationWorld>,
+    query: Query<(&BulletEntity, &BulletTrail)>,
+) {
+    let bullets = world.get_bullets_read();
+
+    for (bullet_entity, trail) in &query {
+        if trail.points.len() < 2 {
+            continue;
+        }
+
+        let bullet = &bullets[bullet_entity.index];
+        let color = bullet.get_color();
+
+        gizmos.linestrip_2d(
+            trail.points.iter().copied(),
+            Color::srgb(
+                color.0,
+                color.1,
+                color.2,
+            ),
+        );
+    }
 }
