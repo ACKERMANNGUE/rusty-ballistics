@@ -113,3 +113,20 @@ pub fn clear_bullets(
 
     world.get_bullets().clear();
 }
+
+pub fn toggle_wind(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut world: ResMut<SimulationWorld>,
+) {
+    if !keyboard.just_pressed(KeyCode::KeyW) {
+        return;
+    }
+
+    let mut wind = world.get_physics_mut().get_wind_mut();
+
+    if wind.is_active() {
+        wind.set_active(false);
+    } else {
+        wind.set_active(true);
+    }
+}

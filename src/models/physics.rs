@@ -1,17 +1,20 @@
 use crate::models::bullet::Bullet;
+use crate::models::wind::Wind;
 
 pub struct Physics {
     delta_time: f32,
     air_resistance: f32,
     gravity: f32,
+    wind: Wind,
 }
 
 impl Physics {
-    pub fn new(delta_time: f32, air_resistance: f32, gravity: f32) -> Self {
+    pub fn new(delta_time: f32, air_resistance: f32, gravity: f32, wind: Wind) -> Self {
         Self {
             delta_time,
             air_resistance,
             gravity,
+            wind,
         }
     }
 
@@ -25,6 +28,14 @@ impl Physics {
 
     pub fn get_delta_time(&self) -> f32 {
         self.delta_time
+    }
+
+    pub fn get_wind(&self) -> &Wind {
+        &self.wind
+    }
+
+    pub fn get_wind_mut(&mut self) -> &mut Wind {
+        &mut self.wind
     }
 
     pub fn update(&self, bullets: &mut Vec<Bullet>, world_size: (f32, f32)) {
@@ -46,7 +57,8 @@ impl Physics {
 
         for bullet_index in 0..bullets.len() {
             let position = *bullets[bullet_index].get_position();
-            let (x_index, y_index) = self.compute_x_y_indices(&position, world_size, grid_cell_size);
+            let (x_index, y_index) =
+                self.compute_x_y_indices(&position, world_size, grid_cell_size);
 
             self.check_collisions_in_neighbours(
                 bullet_index,
@@ -60,7 +72,12 @@ impl Physics {
         }
     }
 
-    fn compute_x_y_indices(&self, position: &glam::Vec2, world_size: (f32, f32), cell_size: f32) -> (isize, isize) {
+    fn compute_x_y_indices(
+        &self,
+        position: &glam::Vec2,
+        world_size: (f32, f32),
+        cell_size: f32,
+    ) -> (isize, isize) {
         let x_index = ((position.x + world_size.0 / 2.0) / cell_size).floor() as isize;
         let y_index = ((position.y + world_size.1 / 2.0) / cell_size).floor() as isize;
         (x_index, y_index)
@@ -73,15 +90,53 @@ impl Physics {
     }
 
     fn compute_new_position(&self, bullet: &Bullet) -> glam::Vec2 {
-        *bullet.get_position() + *bullet.get_velocity() * self.delta_time
+        if self.wind.is_active() {
+            self.compute_new_position_with_wind(bullet)
+        } else {
+            self.compute_new_position_without_wind(bullet)
+        }
+    }
+
+    fn compute_new_position_with_wind(&self, bullet: &Bullet) -> glam::Vec2 {
+        let wind_velocity = self.wind.get_direction() * self.wind.get_speed();
+        // for instance if the wind is blowing to the right, the wind velocity will be positive in the x direction
+        // and negative in the y direction if the wind is blowing downwards. 
+        // The relative velocity of the bullet with respect to the wind is then computed by subtracting the wind velocity from the bullet's velocity.
+        // This relative velocity is used to calculate the drag force acting on the bullet, which is proportional to the air resistance and acts in the opposite direction
+        // of the relative velocity. 
+        // The drag acceleration is then computed by dividing the drag force by the bullet's mass. 
+        // The total acceleration acting on the bullet is then computed by adding the gravity acceleration (which acts downwards) to the drag acceleration.
+        // Finally, the new velocity and position of the bullet are computed using this total acceleration and the time step (delta_time).
+        let relative_velocity = *bullet.get_velocity() - wind_velocity; 
+
+        let drag_force = -self.air_resistance * relative_velocity;
+
+        let drag_acceleration = drag_force / bullet.get_mass();
+        let gravity_acceleration = glam::Vec2::new(0.0, -self.gravity);
+        let acceleration = gravity_acceleration + drag_acceleration;
+
+        let new_velocity = *bullet.get_velocity() + acceleration * self.delta_time;
+        let new_position = *bullet.get_position() + new_velocity * self.delta_time;
+        new_position
+    }
+
+    fn compute_new_position_without_wind(&self, bullet: &Bullet) -> glam::Vec2 {
+        let drag_force = -self.air_resistance * *bullet.get_velocity();
+        let drag_acceleration = drag_force / bullet.get_mass();
+        let gravity_acceleration = glam::Vec2::new(0.0, -self.gravity);
+        let acceleration = gravity_acceleration + drag_acceleration;
+
+        let new_velocity = *bullet.get_velocity() + acceleration * self.delta_time;
+        let new_position = *bullet.get_position() + new_velocity * self.delta_time;
+        new_position
     }
 
     fn set_new_position_and_velocity(&self, bullet: &mut Bullet, new_position: glam::Vec2) {
         bullet.set_position(new_position);
         bullet.set_velocity(glam::Vec2::new(
-                bullet.get_velocity().x,
-                bullet.get_velocity().y - self.gravity * self.delta_time,
-            ));
+            bullet.get_velocity().x,
+            bullet.get_velocity().y - self.gravity * self.delta_time,
+        ));
         bullet.set_velocity(*bullet.get_velocity() * (1.0 - self.air_resistance * self.delta_time));
     }
 

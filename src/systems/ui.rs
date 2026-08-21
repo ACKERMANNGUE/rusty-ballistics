@@ -69,6 +69,8 @@ Gravity: {:.3} m/s^2
 Air resistance: {:.3}
 Delta time: {:.6} s
 Physics rate: {:.1} Hz
+Wind active ? {}
+Wind: {:.3} m/s
 ",
         simulation_time,
         fps,
@@ -80,6 +82,8 @@ Physics rate: {:.1} Hz
         physics.get_air_resistance(),
         delta_time,
         physics_hz,
+        physics.get_wind().is_active(),
+        physics.get_wind().get_speed()
     );
 
     for mut text in &mut query {

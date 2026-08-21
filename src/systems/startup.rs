@@ -1,10 +1,14 @@
 use bevy::prelude::*;
 use bevy::window::PresentMode;
 
+use crate::models::wind::Wind;
+
 use crate::bullet_factory::{
     generate_random_bullet,
     spawn_bullet_entity,
 };
+
+use glam::Vec2;
 
 use crate::config::{
     AIR_RESISTANCE,
@@ -26,6 +30,12 @@ pub fn setup(
         DELTA_TIME,
         AIR_RESISTANCE,
         GRAVITY,
+        Wind::new(
+            Vec2::new(0.0, 1.0),
+            5000.0,
+            0.0,
+            true,
+        )
     );
 
     let mut world = SimulationWorld::new(

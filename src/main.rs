@@ -14,6 +14,7 @@ use systems::input::{
     toggle_pause,
     create_new_bullet,
     clear_bullets,
+    toggle_wind,
 };
 
 use systems::rendering::{
@@ -84,6 +85,7 @@ fn main() {
                 update_ui,
                 create_new_bullet,
                 clear_bullets,
+                toggle_wind,
             ),
         )
         .run();

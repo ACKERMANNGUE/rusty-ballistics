@@ -23,6 +23,10 @@ impl SimulationWorld {
         &self.physics
     }
 
+    pub fn get_physics_mut(&mut self) -> &mut Physics {
+        &mut self.physics
+    }
+
     pub fn add_bullet(&mut self, bullet: Bullet) {
         self.bullets.push(bullet);
     }
