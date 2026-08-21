@@ -12,7 +12,13 @@ pub struct Bullet {
 }
 
 impl Bullet {
-    pub fn new(name: String, position: Vec2, velocity: Vec2, mass: f32, color: (f32, f32, f32)) -> Self {
+    pub fn new(
+        name: String,
+        position: Vec2,
+        velocity: Vec2,
+        mass: f32,
+        color: (f32, f32, f32),
+    ) -> Self {
         Self {
             name,
             position,

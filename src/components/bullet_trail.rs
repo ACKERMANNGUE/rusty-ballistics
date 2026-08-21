@@ -1,5 +1,5 @@
 // used vecDeque to store the points of the bullet trail
-use std::collections::VecDeque; 
+use std::collections::VecDeque;
 /*
 add here ->
 [p1][p2][p3][p4][p5]
