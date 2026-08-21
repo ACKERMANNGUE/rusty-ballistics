@@ -28,10 +28,6 @@ impl Physics {
     }
 
     pub fn update(&self, bullets: &mut Vec<Bullet>, world_size: (f32, f32)) {
-        let gravity = self.gravity;
-        let air_resistance = self.air_resistance;
-        let delta_time = self.delta_time;
-
         for bullet in bullets.iter_mut() {
             let new_position = self.compute_new_position(bullet);
 
