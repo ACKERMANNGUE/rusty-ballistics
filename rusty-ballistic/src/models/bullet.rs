@@ -17,9 +17,9 @@ impl Bullet {
         }
     }
 
-    pub fn get_name(&self) -> &String {
-        &self.name
-    }
+    // pub fn get_name(&self) -> &String {
+    //     &self.name
+    // }
 
     pub fn get_position(&self) -> &Vec2 {
         &self.position
@@ -29,9 +29,9 @@ impl Bullet {
         &self.velocity
     }
 
-    pub fn get_mass(&self) -> f32 {
-        self.mass
-    }
+    // pub fn get_mass(&self) -> f32 {
+    //     self.mass
+    // }
 
     pub fn set_position(&mut self, position: Vec2) {
         self.position = position;

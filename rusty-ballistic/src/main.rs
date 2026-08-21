@@ -12,7 +12,8 @@ const HZ: f32 = 60.0;
 const DELTA_TIME: f32 = 1.0 / HZ;
 
 fn main() {
-    let mut world = World::new(GRAVITY, WORLD_SIZE, AIR_RESISTANCE);
+    let physics = Physics::new(DELTA_TIME, AIR_RESISTANCE, GRAVITY);
+    let mut world = World::new(WORLD_SIZE, physics);
 
     let bullet = Bullet::new(
         String::from("Test bullet"),
@@ -24,8 +25,7 @@ fn main() {
     world.add_bullet(bullet);
     display_world_in_term(&world);
 
-    let mut physics = Physics::new(world, DELTA_TIME);
-    display_n_steps_in_term(&mut physics, 5);
+    display_n_steps_in_term(&mut world, 5);
 }
 
 fn display_world_in_term(world: &World) {
@@ -33,10 +33,10 @@ fn display_world_in_term(world: &World) {
     world.display_bullets_in_term();
 }
 
-fn display_n_steps_in_term(physics: &mut models::physics::Physics, n: usize) {
+fn display_n_steps_in_term(world: &mut World, n: usize) {
     for step in 0..n {
         println!("\nStep [{}]", step + 1);
-        physics.update();
-        physics.get_world().display_bullets_in_term();
+        world.update();
+        world.display_bullets_in_term();
     }
 }
