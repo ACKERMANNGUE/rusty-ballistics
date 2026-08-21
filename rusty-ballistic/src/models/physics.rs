@@ -20,13 +20,22 @@ impl Physics {
     }
 
     // Basic physics update function that updates the position and velocity of bullets in the world based on gravity and air resistance
-    pub fn update(&self, bullets: &mut Vec<Bullet>) {
+    pub fn update(&self, bullets: &mut Vec<Bullet>, world_size: (f32, f32)) {
         let gravity = self.gravity;
         let air_resistance = self.air_resistance;
         let delta_time = self.delta_time;
 
         for bullet in bullets.iter_mut() {
-            bullet.set_position(*bullet.get_position() + *bullet.get_velocity() * delta_time);
+            let new_position = *bullet.get_position() + *bullet.get_velocity() * delta_time;
+
+            if new_position.x < 0.0 || new_position.x > world_size.0 || new_position.y < 0.0 || new_position.y > world_size.1 {
+                println!("Bullet {} has left the world boundaries", bullet.get_name());
+                // TODO: Handle bullet leaving the world boundaries (remove it from the world)
+                bullet.set_velocity(glam::Vec2::new(0.0, 0.0));
+                continue; 
+            }
+
+            bullet.set_position(new_position);
             bullet.set_velocity(glam::Vec2::new(
                 bullet.get_velocity().x,
                 bullet.get_velocity().y - gravity * delta_time

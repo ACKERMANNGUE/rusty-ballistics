@@ -25,7 +25,28 @@ impl World {
     }
 
     pub fn update(&mut self) {
-        self.physics.update(&mut self.bullets);
+        // might not be the best place to check for stagnation, but it works for now
+        // TODO: remove bullets that have stagnated from the world
+        let mut stagnated_counts = 0;
+        while !self.is_frozen(stagnated_counts, self.bullets.len()) {
+            for bullet in &self.bullets {
+                if self.check_bullet_stagnation(bullet) {
+                    stagnated_counts += 1;
+                    println!("Bullet {} has stagnated", bullet.get_name());
+                }
+            }
+            self.physics.update(&mut self.bullets, self.size);
+            self.display_bullets_in_term();
+        }
+    }
+
+    fn is_frozen(&self, stagnated_counts: usize, total_bullets: usize) -> bool {
+        stagnated_counts == total_bullets
+    }
+
+    pub fn check_bullet_stagnation(&self, bullet: &Bullet) -> bool {
+        let velocity = bullet.get_velocity();
+        velocity.x.abs() < 0.01 && velocity.y.abs() < 0.01
     }
 
     pub fn display_in_term(&self) {

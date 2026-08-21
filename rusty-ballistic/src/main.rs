@@ -15,28 +15,27 @@ fn main() {
     let physics = Physics::new(DELTA_TIME, AIR_RESISTANCE, GRAVITY);
     let mut world = World::new(WORLD_SIZE, physics);
 
-    let bullet = Bullet::new(
-        String::from("Test bullet"),
-        Vec2::new(0.0, 0.0),
+    let bullet_1 = Bullet::new(
+        String::from("B1"),
+        Vec2::new(1.2, 2.7),
         Vec2::new(100.0, 50.0),
         0.009,
     );
 
-    world.add_bullet(bullet);
-    display_world_in_term(&world);
+    let bullet_2 = Bullet::new(
+        String::from("B2"),
+        Vec2::new(1.2, 0.3),
+        Vec2::new(15.0, 275.0),
+        0.009,
+    );
 
-    display_n_steps_in_term(&mut world, 5);
+    world.add_bullet(bullet_1);
+    world.add_bullet(bullet_2);
+    world.display_in_term();
+    world.update();
 }
 
 fn display_world_in_term(world: &World) {
     world.display_in_term();
     world.display_bullets_in_term();
-}
-
-fn display_n_steps_in_term(world: &mut World, n: usize) {
-    for step in 0..n {
-        println!("\nStep [{}]", step + 1);
-        world.update();
-        world.display_bullets_in_term();
-    }
 }
