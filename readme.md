@@ -139,6 +139,16 @@ cargo run --release
 - [ ] Better camera and scene management
 - [ ] Audio feedback
 
+### Keys
+
+#### Pause
+
+In order to pause the game, press the spacebar key.
+
+#### Reset simulation
+
+In order to reset the game, press the R key.
+
 ## License
 
 This project is currently a personal learning and development project. 
