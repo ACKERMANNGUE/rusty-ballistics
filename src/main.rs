@@ -24,7 +24,11 @@ use bevy::diagnostic::{
 
 const UI_FONT_SIZE: f32 = 16.0;
 
-const BULLET_COUNT: usize = 10;
+const BULLET_COUNT: usize = 50;
+
+
+use bevy::window::PresentMode;
+
 
 fn main() {
     App::new()
@@ -53,6 +57,8 @@ fn main() {
         .add_systems(
             Update,
             (
+                toggle_pause,
+                regenerate_bullets,
                 sync_bullet_transforms,
                 draw_bullet_trails,
                 draw_world_bounds,
@@ -64,6 +70,7 @@ fn main() {
 
 fn resize_window(mut window: Single<&mut Window>) {
     window.resolution.set(WORLD_SIZE.0, WORLD_SIZE.1);
+    window.present_mode = PresentMode::AutoNoVsync;
 }
 
 fn setup(
@@ -75,26 +82,19 @@ fn setup(
     let mut world = SimulationWorld::new(WORLD_SIZE, physics);
 
     for _ in 0..BULLET_COUNT {
-        let bullet = generate_random_bullet();
-        world.add_bullet(bullet);
+        world.add_bullet(generate_random_bullet());
     }
 
     commands.spawn(Camera2d);
 
-    for (index, bullet) in world.get_bullets().iter().enumerate() {
-        let radius = bullet.get_radius();
-        let color = Color::srgb(
-            bullet.get_color().0,
-            bullet.get_color().1,
-            bullet.get_color().2,
+    for (index, bullet) in world.get_bullets_read().iter().enumerate() {
+        spawn_bullet_entity(
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            bullet,
+            index,
         );
-        commands.spawn((
-            BulletEntity { index },
-            BulletTrail::new(TRAIL_MAX_POINTS),
-            Mesh2d(meshes.add(Circle::new(radius)).into()),
-            MeshMaterial2d(materials.add(color)),
-            Transform::from_xyz(bullet.get_position().x, bullet.get_position().y, 0.0),
-        ));
     }
 
     commands.insert_resource(world);
@@ -258,5 +258,78 @@ Physics rate: {:.1} Hz
 
     for mut text in &mut query {
         text.0 = content.clone();
+    }
+}
+
+fn toggle_pause(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut time: ResMut<Time<Virtual>>,
+) {
+    if keyboard.just_pressed(KeyCode::Space) {
+        if time.is_paused() {
+            time.unpause();
+        } else {
+            time.pause();
+        }
+    }
+}
+fn spawn_bullet_entity(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<ColorMaterial>,
+    bullet: &Bullet,
+    index: usize,
+) {
+    let radius = bullet.get_radius();
+
+    let color = Color::srgb(
+        bullet.get_color().0,
+        bullet.get_color().1,
+        bullet.get_color().2,
+    );
+
+    commands.spawn((
+        BulletEntity { index },
+        BulletTrail::new(TRAIL_MAX_POINTS),
+        Mesh2d(meshes.add(Circle::new(radius)).into()),
+        MeshMaterial2d(materials.add(color)),
+        Transform::from_xyz(
+            bullet.get_position().x,
+            bullet.get_position().y,
+            0.0,
+        ),
+    ));
+}
+
+fn regenerate_bullets(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut commands: Commands,
+    mut world: ResMut<SimulationWorld>,
+    bullet_entities: Query<Entity, With<BulletEntity>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    if !keyboard.just_pressed(KeyCode::KeyR) {
+        return;
+    }
+
+    for entity in &bullet_entities {
+        commands.entity(entity).despawn();
+    }
+
+    world.get_bullets().clear();
+
+    for _ in 0..BULLET_COUNT {
+        world.add_bullet(generate_random_bullet());
+    }
+
+    for (index, bullet) in world.get_bullets_read().iter().enumerate() {
+        spawn_bullet_entity(
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            bullet,
+            index,
+        );
     }
 }
