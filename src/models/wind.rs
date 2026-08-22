@@ -36,4 +36,8 @@ impl Wind {
     pub fn get_turbulence(&self) -> f32 {
         self.turbulence
     }
+
+    pub fn get_direction_degrees(&self) -> f32 {
+        self.direction.y.atan2(self.direction.x).to_degrees()
+    }
 }

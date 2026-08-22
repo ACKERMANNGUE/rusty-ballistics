@@ -15,6 +15,7 @@ use systems::input::{
     create_new_bullet,
     clear_bullets,
     toggle_wind,
+    spawn_at_mouse_position,
 };
 
 use systems::rendering::{
@@ -86,6 +87,7 @@ fn main() {
                 create_new_bullet,
                 clear_bullets,
                 toggle_wind,
+                spawn_at_mouse_position,
             ),
         )
         .run();

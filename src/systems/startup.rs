@@ -1,22 +1,13 @@
-use bevy::prelude::*;
+use bevy::{ prelude::* };
 use bevy::window::PresentMode;
 
 use crate::models::wind::Wind;
 
-use crate::bullet_factory::{
-    generate_random_bullet,
-    spawn_bullet_entity,
-};
+use crate::bullet_factory::{ generate_random_bullet, spawn_bullet_entity };
 
 use glam::Vec2;
 
-use crate::config::{
-    AIR_RESISTANCE,
-    BULLET_COUNT,
-    DELTA_TIME,
-    GRAVITY,
-    WORLD_SIZE,
-};
+use crate::config::{ AIR_RESISTANCE, BULLET_COUNT, DELTA_TIME, GRAVITY, WORLD_SIZE };
 
 use crate::models::physics::Physics;
 use crate::models::world::SimulationWorld;
@@ -24,24 +15,16 @@ use crate::models::world::SimulationWorld;
 pub fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut materials: ResMut<Assets<ColorMaterial>>
 ) {
     let physics = Physics::new(
         DELTA_TIME,
         AIR_RESISTANCE,
         GRAVITY,
-        Wind::new(
-            Vec2::new(0.0, 1.0),
-            5000.0,
-            0.0,
-            true,
-        )
+        Wind::new(Vec2::new(0.0, 1.0), 5.5, 0.0, true)
     );
 
-    let mut world = SimulationWorld::new(
-        WORLD_SIZE,
-        physics,
-    );
+    let mut world = SimulationWorld::new(WORLD_SIZE, physics);
 
     for _ in 0..BULLET_COUNT {
         world.add_bullet(
@@ -51,31 +34,15 @@ pub fn setup(
 
     commands.spawn(Camera2d);
 
-    for (index, bullet) in world
-        .get_bullets_read()
-        .iter()
-        .enumerate()
-    {
-        spawn_bullet_entity(
-            &mut commands,
-            &mut meshes,
-            &mut materials,
-            bullet,
-            index,
-        );
+    for (index, bullet) in world.get_bullets_read().iter().enumerate() {
+        spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, bullet, index);
     }
 
     commands.insert_resource(world);
 }
 
-pub fn resize_window(
-    mut window: Single<&mut Window>,
-) {
-    window.resolution.set(
-        WORLD_SIZE.0,
-        WORLD_SIZE.1,
-    );
+pub fn resize_window(mut window: Single<&mut Window>) {
+    window.resolution.set(WORLD_SIZE.0, WORLD_SIZE.1);
 
-    window.present_mode =
-        PresentMode::AutoNoVsync;
+    window.present_mode = PresentMode::AutoNoVsync;
 }

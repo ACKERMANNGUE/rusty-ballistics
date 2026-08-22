@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::bullet_factory::{
     generate_random_bullet,
+    generate_random_bullet_at_position,
     spawn_bullet_entity,
 };
 
@@ -129,4 +130,55 @@ pub fn toggle_wind(
     } else {
         wind.set_active(true);
     }
+}
+
+pub fn spawn_at_mouse_position(
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window>,
+    cameras: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
+    mut commands: Commands,
+    mut world: ResMut<SimulationWorld>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    if !mouse.just_pressed(MouseButton::Left) {
+        return;
+    }
+
+    let Ok(window) = windows.single() else {
+        return;
+    };
+
+    let Ok((camera, camera_transform)) = cameras.single() else {
+        return;
+    };
+
+    let Some(cursor_position) = window.cursor_position() else {
+        return;
+    };
+
+    let Ok(world_position) =
+        camera.viewport_to_world_2d(camera_transform, cursor_position)
+    else {
+        return;
+    };
+
+    // convert Bevy's Vec2 to the Vec2 type used by the simulation
+    let position = glam::Vec2::new(
+        world_position.x,
+        world_position.y,
+    );
+
+    let bullet = generate_random_bullet_at_position(position);
+    let index = world.get_bullets_read().len();
+
+    spawn_bullet_entity(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        &bullet,
+        index,
+    );
+
+    world.add_bullet(bullet);
 }

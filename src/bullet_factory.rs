@@ -41,6 +41,31 @@ pub fn generate_random_bullet() -> Bullet {
     )
 }
 
+pub fn generate_random_bullet_at_position(position: Vec2) -> Bullet {
+    let name = format!("Bullet {}", rand::random::<u32>());
+
+    let velocity = Vec2::new(
+        rand::random::<f32>() * 200.0 - 100.0,
+        rand::random::<f32>() * 200.0 - 100.0,
+    );
+
+    let mass = rand::random::<f32>() * 0.1 + 0.01;
+
+    let color = (
+        rand::random::<f32>(),
+        rand::random::<f32>(),
+        rand::random::<f32>(),
+    );
+
+    Bullet::new(
+        name,
+        position,
+        velocity,
+        mass,
+        color,
+    )
+}
+
 pub fn spawn_bullet_entity(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,

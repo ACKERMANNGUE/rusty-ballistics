@@ -71,6 +71,7 @@ Delta time: {:.6} s
 Physics rate: {:.1} Hz
 Wind active ? {}
 Wind: {:.3} m/s
+Wind direction: {:.1} degrees
 ",
         simulation_time,
         fps,
@@ -83,7 +84,8 @@ Wind: {:.3} m/s
         delta_time,
         physics_hz,
         physics.get_wind().is_active(),
-        physics.get_wind().get_speed()
+        physics.get_wind().get_speed(),
+        physics.get_wind().get_direction_degrees()
     );
 
     for mut text in &mut query {
