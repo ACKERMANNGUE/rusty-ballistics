@@ -98,7 +98,7 @@ pub fn toggle_wind(keyboard: Res<ButtonInput<KeyCode>>, mut world: ResMut<Simula
     }
 }
 
-pub fn spawn_at_mouse_position(
+pub fn spawn_bullet_at_mouse_position(
     mouse: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
     cameras: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
@@ -134,4 +134,44 @@ pub fn spawn_at_mouse_position(
     spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
 
     world.add_bullet(bullet);
+}
+
+pub fn spawn_bullets_at_mouse_position(
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window>,
+    cameras: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
+    mut commands: Commands,
+    mut world: ResMut<SimulationWorld>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>
+) {
+    if !mouse.just_pressed(MouseButton::Right) {
+        return;
+    }
+
+    let Ok(window) = windows.single() else {
+        return;
+    };
+
+    let Ok((camera, camera_transform)) = cameras.single() else {
+        return;
+    };
+
+    let Some(cursor_position) = window.cursor_position() else {
+        return;
+    };
+
+    let Ok(world_position) = camera.viewport_to_world_2d(camera_transform, cursor_position) else {
+        return;
+    };
+
+    // convert Bevy's Vec2 to the Vec2 type used by the simulation
+    let position = glam::Vec2::new(world_position.x, world_position.y);
+
+    for _ in 0..25 {
+        let bullet = generate_random_bullet_at_position(position);
+        spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
+
+        world.add_bullet(bullet);
+    }
 }

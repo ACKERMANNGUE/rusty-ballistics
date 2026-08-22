@@ -15,7 +15,8 @@ use systems::input::{
     create_new_bullet,
     clear_bullets,
     toggle_wind,
-    spawn_at_mouse_position,
+    spawn_bullet_at_mouse_position,
+    spawn_bullets_at_mouse_position
 };
 
 use systems::rendering::{ draw_bullet_trails, draw_world_bounds, sync_bullet_transforms };
@@ -50,7 +51,8 @@ fn main() {
             create_new_bullet,
             clear_bullets,
             toggle_wind,
-            spawn_at_mouse_position,
+            spawn_bullet_at_mouse_position,
+            spawn_bullets_at_mouse_position, 
         ))
         .run();
 }
