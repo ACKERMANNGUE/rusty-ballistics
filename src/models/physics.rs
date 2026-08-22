@@ -1,4 +1,4 @@
-use crate::models::bullet::Bullet;
+use crate::models::bullet::{ self, Bullet };
 use crate::models::wind::Wind;
 
 pub struct Physics {
@@ -43,19 +43,14 @@ impl Physics {
             let new_position = self.compute_new_position(bullet);
 
             if self.is_out_of_bounds(&new_position, world_size, bullet.get_radius()) {
-                println!(
-                    "Bullet {} is out of bounds at position {:?}, setting velocity and mass to 0.",
-                    bullet.get_name(),
-                    new_position
-                );
-                bullet.set_velocity(glam::Vec2::new(0.0, 0.0));
-                bullet.set_mass(0.0);
+                bullet.set_is_dead(true);
                 continue;
             }
 
             self.set_new_position_and_velocity(bullet, new_position);
         }
 
+        bullets.retain(|bullet: &Bullet| !bullet.is_dead());
         self.compute_collisions(bullets, world_size);
     }
 
@@ -66,8 +61,11 @@ impl Physics {
 
         for bullet_index in 0..bullets.len() {
             let position = *bullets[bullet_index].get_position();
-            let (x_index, y_index) =
-                self.compute_x_y_indices(&position, world_size, grid_cell_size);
+            let (x_index, y_index) = self.compute_x_y_indices(
+                &position,
+                world_size,
+                grid_cell_size
+            );
 
             self.check_collisions_in_neighbours(
                 bullet_index,
@@ -76,7 +74,7 @@ impl Physics {
                 grid_width,
                 grid_height,
                 &spatial_grid,
-                bullets,
+                bullets
             );
         }
     }
@@ -85,7 +83,7 @@ impl Physics {
         &self,
         position: &glam::Vec2,
         world_size: (f32, f32),
-        cell_size: f32,
+        cell_size: f32
     ) -> (isize, isize) {
         let x_index = ((position.x + world_size.0 / 2.0) / cell_size).floor() as isize;
         let y_index = ((position.y + world_size.1 / 2.0) / cell_size).floor() as isize;
@@ -100,12 +98,12 @@ impl Physics {
 
     fn compute_new_position(&self, bullet: &Bullet) -> glam::Vec2 {
         let wind_velocity = self.wind.get_direction() * self.wind.get_speed();
-        let relative_velocity = *bullet.get_velocity() - wind_velocity; 
+        let relative_velocity = *bullet.get_velocity() - wind_velocity;
         let mut drag_force = -self.air_resistance * *bullet.get_velocity();
 
         if self.wind.is_active() {
             drag_force = -self.air_resistance * relative_velocity;
-        } 
+        }
 
         let drag_acceleration = drag_force / bullet.get_mass();
         let gravity_acceleration = glam::Vec2::new(0.0, -self.gravity);
@@ -118,10 +116,12 @@ impl Physics {
 
     fn set_new_position_and_velocity(&self, bullet: &mut Bullet, new_position: glam::Vec2) {
         bullet.set_position(new_position);
-        bullet.set_velocity(glam::Vec2::new(
-            bullet.get_velocity().x,
-            bullet.get_velocity().y - self.gravity * self.delta_time,
-        ));
+        bullet.set_velocity(
+            glam::Vec2::new(
+                bullet.get_velocity().x,
+                bullet.get_velocity().y - self.gravity * self.delta_time
+            )
+        );
         bullet.set_velocity(*bullet.get_velocity() * (1.0 - self.air_resistance * self.delta_time));
     }
 
@@ -133,7 +133,7 @@ impl Physics {
         grid_width: usize,
         grid_height: usize,
         spatial_grid: &Vec<Vec<usize>>,
-        bullets: &mut Vec<Bullet>,
+        bullets: &mut Vec<Bullet>
     ) {
         // use of isize for x_index and y_index allows us to check neighboring cells without worrying about underflow when subtracting 1
         // compared to using usize which is unsigned and would underflow when subtracting 1 from 0
@@ -146,11 +146,11 @@ impl Physics {
                     continue;
                 }
 
-                if neighbor_x as usize >= grid_width || neighbor_y as usize >= grid_height {
+                if (neighbor_x as usize) >= grid_width || (neighbor_y as usize) >= grid_height {
                     continue;
                 }
 
-                let cell_index = neighbor_y as usize * grid_width + neighbor_x as usize;
+                let cell_index = (neighbor_y as usize) * grid_width + (neighbor_x as usize);
 
                 for &other_index in &spatial_grid[cell_index] {
                     // Avoid self-collision and checking the same pair twice
@@ -172,7 +172,11 @@ impl Physics {
                     }
 
                     let combined_radius = bullet.get_radius() + other_bullet.get_radius();
-                    if distance_squared < combined_radius * combined_radius {
+                    if
+                        distance_squared < combined_radius * combined_radius &&
+                        !bullet.is_dead() &&
+                        !other_bullet.is_dead()
+                    {
                         self.compute_collision_response(bullet, other_bullet);
                     }
                 }
@@ -204,7 +208,7 @@ impl Physics {
             return;
         }
 
-        let impulse = (2.0 * s) / ((1.0 / mass1) + (1.0 / mass2));
+        let impulse = (2.0 * s) / (1.0 / mass1 + 1.0 / mass2);
         bullet1.set_velocity(velocity1 - (impulse / mass1) * direction);
         bullet2.set_velocity(velocity2 + (impulse / mass2) * direction);
     }
@@ -213,7 +217,7 @@ impl Physics {
         &self,
         bullets: &Vec<Bullet>,
         world_size: (f32, f32),
-        cell_size: f32,
+        cell_size: f32
     ) -> Vec<Vec<usize>> {
         let grid_width = (world_size.0 / cell_size).ceil() as usize;
         let grid_height = (world_size.1 / cell_size).ceil() as usize;
@@ -236,14 +240,14 @@ impl Physics {
         &self,
         position: &glam::Vec2,
         world_size: (f32, f32),
-        bullet_radius: f32,
+        bullet_radius: f32
     ) -> bool {
         let half_width = world_size.0 / 2.0;
         let half_height = world_size.1 / 2.0;
 
-        position.x - bullet_radius < -half_width
-            || position.x + bullet_radius > half_width
-            || position.y - bullet_radius < -half_height
-            || position.y + bullet_radius > half_height
+        position.x - bullet_radius < -half_width ||
+            position.x + bullet_radius > half_width ||
+            position.y - bullet_radius < -half_height ||
+            position.y + bullet_radius > half_height
     }
 }

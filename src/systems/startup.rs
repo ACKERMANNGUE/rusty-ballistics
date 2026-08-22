@@ -27,15 +27,13 @@ pub fn setup(
     let mut world = SimulationWorld::new(WORLD_SIZE, physics);
 
     for _ in 0..BULLET_COUNT {
-        world.add_bullet(
-            generate_random_bullet()
-        );
+        world.add_bullet(generate_random_bullet());
     }
 
     commands.spawn(Camera2d);
 
-    for (index, bullet) in world.get_bullets_read().iter().enumerate() {
-        spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, bullet, index);
+    for bullet in world.get_bullets_read().iter() {
+        spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, bullet);
     }
 
     commands.insert_resource(world);

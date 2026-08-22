@@ -1,5 +1,5 @@
 pub const GRAVITY: f32 = 9.81;
-pub const AIR_RESISTANCE: f32 = 0.001; 
+pub const AIR_RESISTANCE: f32 = 0.001;
 
 pub const WORLD_SIZE: (f32, f32) = (1920.0, 1080.0);
 

@@ -9,6 +9,8 @@ pub struct Bullet {
     mass: f32,
     color: (f32, f32, f32),
     radius: f32,
+    is_dead: bool,
+    id: u32,
 }
 
 impl Bullet {
@@ -18,6 +20,7 @@ impl Bullet {
         velocity: Vec2,
         mass: f32,
         color: (f32, f32, f32),
+        id: u32
     ) -> Self {
         Self {
             name,
@@ -26,11 +29,17 @@ impl Bullet {
             mass,
             color,
             radius: Self::compute_bullet_radius(mass),
+            is_dead: false,
+            id,
         }
     }
 
+    pub fn get_id(&self) -> u32 {
+        self.id
+    }
+
     fn compute_bullet_radius(mass: f32) -> f32 {
-        (BASE_BULLET_RADIUS * mass * 10.0) + BASE_BULLET_RADIUS
+        BASE_BULLET_RADIUS * mass * 10.0 + BASE_BULLET_RADIUS
     }
 
     pub fn set_mass(&mut self, mass: f32) {
@@ -73,15 +82,11 @@ impl Bullet {
         self.velocity = velocity;
     }
 
-    // pub fn compute_kinetic_energy(&self) -> f32 {
-    //     0.5 * self.mass * self.velocity.length_squared()
-    // }
+    pub fn set_is_dead(&mut self, is_dead: bool) {
+        self.is_dead = is_dead;
+    }
 
-    // pub fn compute_momentum(&self) -> Vec2 {
-    //     self.mass * self.velocity
-    // }
-
-    // pub fn compute_angle(&self) -> f32 {
-    //     self.velocity.y.atan2(self.velocity.x) * 180.0 / std::f32::consts::PI
-    // }
+    pub fn is_dead(&self) -> bool {
+        self.is_dead
+    }
 }

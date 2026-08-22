@@ -1,7 +1,4 @@
-use bevy::diagnostic::{
-    DiagnosticsStore,
-    FrameTimeDiagnosticsPlugin,
-};
+use bevy::diagnostic::{ DiagnosticsStore, FrameTimeDiagnosticsPlugin };
 
 use bevy::prelude::*;
 
@@ -22,7 +19,7 @@ pub fn setup_ui(mut commands: Commands) {
                 padding: UiRect::all(Val::Px(16.0)),
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.02, 0.02, 0.03, 0.90)),
+            BackgroundColor(Color::srgba(0.02, 0.02, 0.03, 0.9)),
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -38,7 +35,7 @@ pub fn update_ui(
     world: Res<SimulationWorld>,
     diagnostics: Res<DiagnosticsStore>,
     fixed_time: Res<Time<Fixed>>,
-    mut query: Query<&mut Text, With<SimulationUiText>>,
+    mut query: Query<&mut Text, With<SimulationUiText>>
 ) {
     let physics = world.get_physics();
     let bullets = world.get_bullets_read();

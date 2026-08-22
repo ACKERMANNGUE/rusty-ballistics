@@ -12,10 +12,7 @@ use crate::config::BULLET_COUNT;
 
 use crate::models::world::SimulationWorld;
 
-pub fn toggle_pause(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut time: ResMut<Time<Virtual>>,
-) {
+pub fn toggle_pause(keyboard: Res<ButtonInput<KeyCode>>, mut time: ResMut<Time<Virtual>>) {
     if keyboard.just_pressed(KeyCode::Space) {
         if time.is_paused() {
             time.unpause();
@@ -29,14 +26,9 @@ pub fn regenerate_bullets(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
     mut world: ResMut<SimulationWorld>,
-    bullet_entities: Query<
-        Entity,
-        With<BulletEntity>,
-    >,
+    bullet_entities: Query<Entity, With<BulletEntity>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<
-        Assets<ColorMaterial>
-    >,
+    mut materials: ResMut<Assets<ColorMaterial>>
 ) {
     if !keyboard.just_pressed(KeyCode::KeyR) {
         return;
@@ -49,23 +41,11 @@ pub fn regenerate_bullets(
     world.get_bullets().clear();
 
     for _ in 0..BULLET_COUNT {
-        world.add_bullet(
-            generate_random_bullet()
-        );
+        world.add_bullet(generate_random_bullet());
     }
 
-    for (index, bullet) in world
-        .get_bullets_read()
-        .iter()
-        .enumerate()
-    {
-        spawn_bullet_entity(
-            &mut commands,
-            &mut meshes,
-            &mut materials,
-            bullet,
-            index,
-        );
+    for bullet in world.get_bullets_read().iter() {
+        spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, bullet);
     }
 }
 
@@ -74,7 +54,7 @@ pub fn create_new_bullet(
     mut commands: Commands,
     mut world: ResMut<SimulationWorld>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut materials: ResMut<Assets<ColorMaterial>>
 ) {
     if !keyboard.just_pressed(KeyCode::KeyF) {
         return;
@@ -82,15 +62,7 @@ pub fn create_new_bullet(
 
     let bullet = generate_random_bullet();
 
-    let index = world.get_bullets_read().len();
-
-    spawn_bullet_entity(
-        &mut commands,
-        &mut meshes,
-        &mut materials,
-        &bullet,
-        index,
-    );
+    spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
 
     world.add_bullet(bullet);
 }
@@ -99,10 +71,7 @@ pub fn clear_bullets(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
     mut world: ResMut<SimulationWorld>,
-    bullet_entities: Query<
-        Entity,
-        With<BulletEntity>,
-    >,
+    bullet_entities: Query<Entity, With<BulletEntity>>
 ) {
     if !keyboard.just_pressed(KeyCode::KeyC) {
         return;
@@ -115,10 +84,7 @@ pub fn clear_bullets(
     world.get_bullets().clear();
 }
 
-pub fn toggle_wind(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut world: ResMut<SimulationWorld>,
-) {
+pub fn toggle_wind(keyboard: Res<ButtonInput<KeyCode>>, mut world: ResMut<SimulationWorld>) {
     if !keyboard.just_pressed(KeyCode::KeyW) {
         return;
     }
@@ -139,7 +105,7 @@ pub fn spawn_at_mouse_position(
     mut commands: Commands,
     mut world: ResMut<SimulationWorld>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut materials: ResMut<Assets<ColorMaterial>>
 ) {
     if !mouse.just_pressed(MouseButton::Left) {
         return;
@@ -157,28 +123,15 @@ pub fn spawn_at_mouse_position(
         return;
     };
 
-    let Ok(world_position) =
-        camera.viewport_to_world_2d(camera_transform, cursor_position)
-    else {
+    let Ok(world_position) = camera.viewport_to_world_2d(camera_transform, cursor_position) else {
         return;
     };
 
     // convert Bevy's Vec2 to the Vec2 type used by the simulation
-    let position = glam::Vec2::new(
-        world_position.x,
-        world_position.y,
-    );
+    let position = glam::Vec2::new(world_position.x, world_position.y);
 
     let bullet = generate_random_bullet_at_position(position);
-    let index = world.get_bullets_read().len();
-
-    spawn_bullet_entity(
-        &mut commands,
-        &mut meshes,
-        &mut materials,
-        &bullet,
-        index,
-    );
+    spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
 
     world.add_bullet(bullet);
 }
