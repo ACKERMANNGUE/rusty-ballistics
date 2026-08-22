@@ -43,6 +43,11 @@ impl Physics {
             let new_position = self.compute_new_position(bullet);
 
             if self.is_out_of_bounds(&new_position, world_size, bullet.get_radius()) {
+                println!(
+                    "Bullet {} is out of bounds at position {:?}, setting velocity and mass to 0.",
+                    bullet.get_name(),
+                    new_position
+                );
                 bullet.set_velocity(glam::Vec2::new(0.0, 0.0));
                 bullet.set_mass(0.0);
                 continue;
@@ -51,6 +56,10 @@ impl Physics {
             self.set_new_position_and_velocity(bullet, new_position);
         }
 
+        self.compute_collisions(bullets, world_size);
+    }
+
+    fn compute_collisions(&self, bullets: &mut Vec<Bullet>, world_size: (f32, f32)) {
         let grid_cell_size = 100.0;
         let spatial_grid = self.build_spatial_grid(bullets, world_size, grid_cell_size);
         let (grid_width, grid_height) = self.compute_grid_size(world_size, grid_cell_size);
@@ -90,38 +99,14 @@ impl Physics {
     }
 
     fn compute_new_position(&self, bullet: &Bullet) -> glam::Vec2 {
-        if self.wind.is_active() {
-            self.compute_new_position_with_wind(bullet)
-        } else {
-            self.compute_new_position_without_wind(bullet)
-        }
-    }
-
-    fn compute_new_position_with_wind(&self, bullet: &Bullet) -> glam::Vec2 {
         let wind_velocity = self.wind.get_direction() * self.wind.get_speed();
-        // for instance if the wind is blowing to the right, the wind velocity will be positive in the x direction
-        // and negative in the y direction if the wind is blowing downwards. 
-        // The relative velocity of the bullet with respect to the wind is then computed by subtracting the wind velocity from the bullet's velocity.
-        // This relative velocity is used to calculate the drag force acting on the bullet, which is proportional to the air resistance and acts in the opposite direction
-        // of the relative velocity. 
-        // The drag acceleration is then computed by dividing the drag force by the bullet's mass. 
-        // The total acceleration acting on the bullet is then computed by adding the gravity acceleration (which acts downwards) to the drag acceleration.
-        // Finally, the new velocity and position of the bullet are computed using this total acceleration and the time step (delta_time).
         let relative_velocity = *bullet.get_velocity() - wind_velocity; 
+        let mut drag_force = -self.air_resistance * *bullet.get_velocity();
 
-        let drag_force = -self.air_resistance * relative_velocity;
+        if self.wind.is_active() {
+            drag_force = -self.air_resistance * relative_velocity;
+        } 
 
-        let drag_acceleration = drag_force / bullet.get_mass();
-        let gravity_acceleration = glam::Vec2::new(0.0, -self.gravity);
-        let acceleration = gravity_acceleration + drag_acceleration;
-
-        let new_velocity = *bullet.get_velocity() + acceleration * self.delta_time;
-        let new_position = *bullet.get_position() + new_velocity * self.delta_time;
-        new_position
-    }
-
-    fn compute_new_position_without_wind(&self, bullet: &Bullet) -> glam::Vec2 {
-        let drag_force = -self.air_resistance * *bullet.get_velocity();
         let drag_acceleration = drag_force / bullet.get_mass();
         let gravity_acceleration = glam::Vec2::new(0.0, -self.gravity);
         let acceleration = gravity_acceleration + drag_acceleration;

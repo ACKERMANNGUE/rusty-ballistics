@@ -49,9 +49,9 @@ impl Bullet {
         self.color
     }
 
-    // pub fn get_name(&self) -> &String {
-    //     &self.name
-    // }
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
 
     pub fn get_position(&self) -> &Vec2 {
         &self.position
