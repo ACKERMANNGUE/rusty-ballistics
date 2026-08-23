@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
+use crate::models::bullet::Bullet;
 use crate::models::world::SimulationWorld;
 
 pub fn sync_bullet_transforms(
@@ -61,4 +62,29 @@ pub fn draw_bullet_trails(
 
         gizmos.linestrip_2d(trail.points.iter().copied(), Color::srgb(color.0, color.1, color.2));
     }
+}
+
+pub fn display_bullet_hitbox(
+    world: Res<SimulationWorld>,
+    mut gizmos: Gizmos,
+    query: Query<&BulletEntity>
+) {
+    let bullets = world.get_bullets_read();
+    for bullet_entity in &query {
+        let bullet = find_bullet_by_id(bullets, bullet_entity.get_id());
+        if let Some(bullet) = bullet {
+            draw_bullet_hitbox(bullet, &mut gizmos);
+        }
+    }
+}
+
+fn draw_bullet_hitbox(bullet: &Bullet, gizmos: &mut Gizmos) {
+    let position = bullet.get_position();
+    let size = bullet.get_size();
+
+    gizmos.rect_2d(
+        Isometry2d::new(*position, Rot2::degrees(0.0)),
+        Vec2::new(size * 2.0, size * 2.0),
+        Color::srgb(1.0, 0.0, 0.0)
+    );
 }

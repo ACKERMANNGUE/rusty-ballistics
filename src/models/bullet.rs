@@ -84,4 +84,5 @@ impl Bullet {
     pub fn is_dead(&self) -> bool {
         self.is_dead
     }
+
 }

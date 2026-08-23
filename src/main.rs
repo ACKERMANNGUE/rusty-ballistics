@@ -21,7 +21,7 @@ use systems::input::{
     bullet_launcher_input_system,
 };
 
-use systems::rendering::{ draw_bullet_trails, draw_world_bounds, sync_bullet_transforms };
+use systems::rendering::{ draw_bullet_trails, draw_world_bounds, sync_bullet_transforms, display_bullet_hitbox };
 
 use systems::simulation::{
     despawn_orphan_bullet_entities,
@@ -68,5 +68,6 @@ fn main() {
             spawn_bullets_at_mouse_position,
             bullet_launcher_input_system,
         ))
+        .add_systems(Update, display_bullet_hitbox)
         .run();
 }
