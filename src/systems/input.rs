@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ gizmos, prelude::* };
 
 use crate::bullet_factory::{
     generate_bullet_at_position_and_velocity,
@@ -169,7 +169,8 @@ pub fn bullet_launcher_input_system(
     mut world: ResMut<SimulationWorld>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut commands: Commands
+    mut commands: Commands,
+    mut gizmos: Gizmos
 ) {
     let (camera, camera_transform) = *camera;
 
@@ -181,28 +182,29 @@ pub fn bullet_launcher_input_system(
 
     if mouse_buttons.just_pressed(MouseButton::Left) {
         if let Some(position) = mouse_world_position {
-            println!("Mouse pressed at world position: {:?}", position);
             launcher.set_drag_start(position);
+            launcher.set_drag_end(position);
         }
     }
 
-    if mouse_buttons.just_released(MouseButton::Left) {
+    if mouse_buttons.pressed(MouseButton::Left) && launcher.is_dragging() {
         if let Some(position) = mouse_world_position {
-            println!("Mouse released at world position: {:?}", position);
             launcher.set_drag_end(position);
         }
 
-        if launcher.is_dragging() {
-            let spawn_position = launcher.get_drag_start();
+        gizmos.line_2d(
+            launcher.get_drag_start(),
+            launcher.get_drag_end(),
+            Color::srgb(1.0, 1.0, 1.0)
+        );
+    }
 
-            if let Some(velocity) = launcher.release_drag() {
-                let bullet = generate_bullet_at_position_and_velocity(spawn_position, velocity);
-                spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
-                world.add_bullet(bullet);
-                // reset the drag start and end positions after releasing the drag
-                launcher.set_drag_start(Vec2::ZERO);
-                launcher.set_drag_end(Vec2::ZERO);
-            }
+    if mouse_buttons.just_released(MouseButton::Left) && launcher.is_dragging() {
+        let spawn_position = launcher.get_drag_start();
+        if let Some(velocity) = launcher.release_drag() {
+            let bullet = generate_bullet_at_position_and_velocity(spawn_position, velocity * (-1.0));
+            spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
+            world.add_bullet(bullet);
         }
     }
 }
