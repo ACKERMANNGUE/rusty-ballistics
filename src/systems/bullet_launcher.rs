@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::config::MAX_BULLET_VELOCITY;
+
 #[derive(Resource)]
 pub struct BulletLauncher {
     is_dragging: bool,
@@ -15,8 +17,8 @@ impl BulletLauncher {
             is_dragging: false,
             drag_start: Vec2::ZERO,
             drag_end: Vec2::ZERO,
-            velocity_scale: 1.0,
-            max_velocity: 500.0,
+            velocity_scale: 2.0,
+            max_velocity: MAX_BULLET_VELOCITY,
         }
     }
 
