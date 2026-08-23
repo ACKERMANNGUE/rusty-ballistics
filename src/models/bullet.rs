@@ -42,24 +42,12 @@ impl Bullet {
         BASE_BULLET_RADIUS * mass * 10.0 + BASE_BULLET_RADIUS
     }
 
-    pub fn set_mass(&mut self, mass: f32) {
-        self.mass = mass;
-    }
-
     pub fn get_radius(&self) -> f32 {
         self.radius
     }
 
-    // pub fn set_color(&mut self, color: (f32, f32, f32)) {
-    //     self.color = color;
-    // }
-
     pub fn get_color(&self) -> (f32, f32, f32) {
         self.color
-    }
-
-    pub fn get_name(&self) -> &String {
-        &self.name
     }
 
     pub fn get_position(&self) -> &Vec2 {

@@ -54,4 +54,8 @@ impl BulletLauncher {
     pub fn get_drag_end(&self) -> Vec2 {
         self.drag_end
     }
+
+    pub fn get_max_drag_length(&self) -> f32 {
+        self.max_velocity / self.velocity_scale
+    }
 }

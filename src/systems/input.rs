@@ -85,43 +85,6 @@ pub fn toggle_wind(keyboard: Res<ButtonInput<KeyCode>>, mut world: ResMut<Simula
     }
 }
 
-// pub fn spawn_bullet_at_mouse_position(
-//     mouse: Res<ButtonInput<MouseButton>>,
-//     windows: Query<&Window>,
-//     cameras: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
-//     mut commands: Commands,
-//     mut world: ResMut<SimulationWorld>,
-//     mut meshes: ResMut<Assets<Mesh>>,
-//     mut materials: ResMut<Assets<ColorMaterial>>
-// ) {
-//     if !mouse.just_pressed(MouseButton::Left) {
-//         return;
-//     }
-
-//     let Ok(window) = windows.single() else {
-//         return;
-//     };
-
-//     let Ok((camera, camera_transform)) = cameras.single() else {
-//         return;
-//     };
-
-//     let Some(cursor_position) = window.cursor_position() else {
-//         return;
-//     };
-
-//     let Ok(world_position) = camera.viewport_to_world_2d(camera_transform, cursor_position) else {
-//         return;
-//     };
-
-//     let position = Vec2::new(world_position.x, world_position.y);
-
-//     let bullet = generate_random_bullet_at_position(position);
-//     spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
-
-//     world.add_bullet(bullet);
-// }
-
 pub fn spawn_bullets_at_mouse_position(
     mouse: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
@@ -192,11 +155,7 @@ pub fn bullet_launcher_input_system(
             launcher.set_drag_end(position);
         }
 
-        gizmos.line_2d(
-            launcher.get_drag_start(),
-            launcher.get_drag_end(),
-            Color::srgb(1.0, 1.0, 1.0)
-        );
+        draw_drag_line(&mut gizmos, launcher.get_drag_start(), launcher.get_drag_end(), launcher.get_max_drag_length());
     }
 
     if mouse_buttons.just_released(MouseButton::Left) && launcher.is_dragging() {
@@ -207,4 +166,13 @@ pub fn bullet_launcher_input_system(
             world.add_bullet(bullet);
         }
     }
+}
+
+fn draw_drag_line(gizmos: &mut Gizmos, start: Vec2, end: Vec2, max_drag_length: f32) {
+    let drag_vector = end - start;
+    let drag_length = drag_vector.length();
+    let red_intensity = (drag_length / max_drag_length).clamp(0.0, 1.0);
+    let green_intensity = (1.0 - drag_length / max_drag_length).clamp(0.0, 1.0);
+    let blue_intensity = 0.5;
+    gizmos.line_2d(start, end, Color::srgb(red_intensity, green_intensity, blue_intensity));
 }

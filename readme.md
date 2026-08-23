@@ -130,7 +130,7 @@ cargo run --release
 - [x] Collision response and impact effects
 - [x] Wind
 - [ ] Better projectile physics tuning
-- [ ] Launch project with mouse dragging
+- [x] Launch project with mouse dragging
 - [ ] Multiple "weapon" types or "firing modes"
 - [ ] Better camera and scene management
 - [ ] Audio feedback
