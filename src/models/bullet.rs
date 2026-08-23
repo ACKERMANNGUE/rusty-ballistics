@@ -45,7 +45,7 @@ impl Bullet {
     }
 
     fn compute_bullet_size(mass: f32) -> f32 {
-        BASE_BULLET_SIZE * mass * 10.0 + BASE_BULLET_SIZE
+        BASE_BULLET_SIZE * mass
     }
 
     pub fn get_size(&self) -> f32 {

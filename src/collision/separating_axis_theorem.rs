@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use crate::geometry::projection::project_polygon;
+
 
 pub fn check_polygon_collision(polygon1: &[Vec2], polygon2: &[Vec2]) -> bool {
     if polygon1.len() < 3 || polygon2.len() < 3 {
@@ -40,23 +42,3 @@ fn get_polygon_axes(polygon: &[Vec2]) -> Vec<Vec2> {
     axes
 }
 
-fn project_polygon(axis: Vec2, polygon: &[Vec2]) -> (f32, f32) {
-    let first_projection = axis.dot(polygon[0]);
-
-    let mut min = first_projection;
-    let mut max = first_projection;
-
-    for point in polygon.iter().skip(1) {
-        let projection = axis.dot(*point);
-
-        if projection < min {
-            min = projection;
-        }
-
-        if projection > max {
-            max = projection;
-        }
-    }
-
-    (min, max)
-}

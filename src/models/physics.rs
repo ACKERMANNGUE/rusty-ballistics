@@ -1,5 +1,6 @@
 use bevy::prelude::Vec2;
 
+use crate::geometry::projection::project_polygon;
 use crate::models::bullet::Bullet;
 use crate::models::wind::Wind;
 use crate::resources::shape_library::ShapeLibrary;
@@ -50,19 +51,50 @@ impl Physics {
         shape_library: &ShapeLibrary
     ) {
         self.wind.update_turbulence();
+
         for bullet in bullets.iter_mut() {
-            let new_position = self.compute_new_position(bullet);
+            let (new_position, new_velocity) = self.compute_new_state(bullet, shape_library);
 
             if self.is_out_of_bounds(&new_position, world_size, bullet.get_size()) {
                 bullet.set_is_dead(true);
                 continue;
             }
 
-            self.set_new_position_and_velocity(bullet, new_position);
+            bullet.set_position(new_position);
+            bullet.set_velocity(new_velocity);
         }
 
-        bullets.retain(|bullet: &Bullet| !bullet.is_dead());
+        bullets.retain(|bullet| !bullet.is_dead());
+
         self.compute_collisions(bullets, world_size, shape_library);
+    }
+
+    fn compute_new_state(&self, bullet: &Bullet, shape_library: &ShapeLibrary) -> (Vec2, Vec2) {
+        let bullet_velocity = *bullet.get_velocity();
+
+        let air_relative_velocity = if self.wind.is_active() {
+            let wind_velocity = self.wind.get_direction() * self.wind.get_speed();
+
+            bullet_velocity - wind_velocity - *self.wind.get_turbulence()
+        } else {
+            bullet_velocity
+        };
+
+        let projected_width = self.compute_projected_width(
+            bullet,
+            air_relative_velocity,
+            shape_library
+        );
+
+        let reference_width = 1.0;
+        let shape_drag_factor = projected_width / reference_width;
+        let drag_force = -self.air_resistance * shape_drag_factor * air_relative_velocity;
+        let drag_acceleration = drag_force / bullet.get_mass();
+        let gravity_acceleration = Vec2::new(0.0, -self.gravity);
+        let acceleration = gravity_acceleration + drag_acceleration;
+        let new_velocity = bullet_velocity + acceleration * self.delta_time;
+        let new_position = *bullet.get_position() + new_velocity * self.delta_time;
+        (new_position, new_velocity)
     }
 
     fn compute_collisions(
@@ -113,34 +145,31 @@ impl Physics {
         (grid_width, grid_height)
     }
 
-    fn compute_new_position(&self, bullet: &Bullet) -> Vec2 {
-        let wind_velocity = self.wind.get_direction() * self.wind.get_speed();
-        let relative_velocity =
-            *bullet.get_velocity() - wind_velocity - *self.wind.get_turbulence();
-        let mut drag_force = -self.air_resistance * *bullet.get_velocity();
-
-        if self.wind.is_active() {
-            drag_force = -self.air_resistance * relative_velocity;
+    fn compute_projected_width(
+        &self,
+        bullet: &Bullet,
+        relative_velocity: Vec2,
+        shape_library: &ShapeLibrary
+    ) -> f32 {
+        if relative_velocity.length_squared() == 0.0 {
+            return 0.0;
         }
 
-        let drag_acceleration = drag_force / bullet.get_mass();
-        let gravity_acceleration = Vec2::new(0.0, -self.gravity);
-        let acceleration = gravity_acceleration + drag_acceleration;
+        let Some(world_shape) = get_bullet_world_shape(bullet, shape_library) else {
+            return 0.0;
+        };
 
-        let new_velocity = *bullet.get_velocity() + acceleration * self.delta_time;
-        let new_position = *bullet.get_position() + new_velocity * self.delta_time;
-        new_position
-    }
+        if world_shape.is_empty() {
+            return 0.0;
+        }
 
-    fn set_new_position_and_velocity(&self, bullet: &mut Bullet, new_position: Vec2) {
-        bullet.set_position(new_position);
-        bullet.set_velocity(
-            Vec2::new(
-                bullet.get_velocity().x,
-                bullet.get_velocity().y - self.gravity * self.delta_time
-            )
-        );
-        bullet.set_velocity(*bullet.get_velocity() * (1.0 - self.air_resistance * self.delta_time));
+        let direction = relative_velocity.normalize();
+
+        let perpendicular_axis = Vec2::new(-direction.y, direction.x);
+
+        let (min, max) = project_polygon(perpendicular_axis, &world_shape);
+
+        max - min
     }
 
     fn check_collisions_in_neighbours(

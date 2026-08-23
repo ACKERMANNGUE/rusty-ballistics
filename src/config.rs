@@ -1,7 +1,7 @@
 pub const GRAVITY: f32 = 9.81;
 pub const AIR_RESISTANCE: f32 = 0.001;
 
-pub const WORLD_SIZE: (f32, f32) = (1920.0, 1080.0);
+pub const WORLD_SIZE: (f32, f32) = (5000.0, 5000.0);
 
 pub const HZ: f32 = 144.0;
 pub const DELTA_TIME: f32 = 1.0 / HZ;
@@ -18,5 +18,5 @@ pub const TURBULENCE_DELTA_MAX: f32 = 0.05;
 
 pub const MAX_BULLET_VELOCITY: f32 = 1000.0;
 
-pub const BASE_BULLET_SIZE: f32 = 10.0;
+pub const BASE_BULLET_SIZE: f32 = 0.5;
 

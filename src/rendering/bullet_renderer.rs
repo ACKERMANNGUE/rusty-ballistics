@@ -51,7 +51,7 @@ fn create_bullet_mesh(bullet: &Bullet, shape_library: &ShapeLibrary) -> Option<M
     let polygon = match ConvexPolygon::new(scaled_points) {
         Ok(polygon) => polygon,
         Err(error) => {
-            println!("Shape '{}' is not a valid convex polygon: {:?}", shape_name, error);
+            println!("Shape '{}' is not a valid convex polygon: {:?}", shape_name, error); // TODO: Handle non-convex shapes in the future
             return None;
         }
     };
