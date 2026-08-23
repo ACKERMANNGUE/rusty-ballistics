@@ -1,4 +1,6 @@
-use crate::models::bullet::{ self, Bullet };
+use bevy::prelude::Vec2;
+
+use crate::models::bullet::Bullet;
 use crate::models::wind::Wind;
 
 pub struct Physics {
@@ -82,7 +84,7 @@ impl Physics {
 
     fn compute_x_y_indices(
         &self,
-        position: &glam::Vec2,
+        position: &Vec2,
         world_size: (f32, f32),
         cell_size: f32
     ) -> (isize, isize) {
@@ -97,7 +99,7 @@ impl Physics {
         (grid_width, grid_height)
     }
 
-    fn compute_new_position(&self, bullet: &Bullet) -> glam::Vec2 {
+    fn compute_new_position(&self, bullet: &Bullet) -> Vec2 {
         let wind_velocity = self.wind.get_direction() * self.wind.get_speed();
         let relative_velocity = *bullet.get_velocity() - wind_velocity - *self.wind.get_turbulence();
         let mut drag_force = -self.air_resistance * *bullet.get_velocity();
@@ -107,7 +109,7 @@ impl Physics {
         }
 
         let drag_acceleration = drag_force / bullet.get_mass();
-        let gravity_acceleration = glam::Vec2::new(0.0, -self.gravity);
+        let gravity_acceleration = Vec2::new(0.0, -self.gravity);
         let acceleration = gravity_acceleration + drag_acceleration;
 
         let new_velocity = *bullet.get_velocity() + acceleration * self.delta_time;
@@ -115,10 +117,10 @@ impl Physics {
         new_position
     }
 
-    fn set_new_position_and_velocity(&self, bullet: &mut Bullet, new_position: glam::Vec2) {
+    fn set_new_position_and_velocity(&self, bullet: &mut Bullet, new_position: Vec2) {
         bullet.set_position(new_position);
         bullet.set_velocity(
-            glam::Vec2::new(
+            Vec2::new(
                 bullet.get_velocity().x,
                 bullet.get_velocity().y - self.gravity * self.delta_time
             )
@@ -239,7 +241,7 @@ impl Physics {
 
     fn is_out_of_bounds(
         &self,
-        position: &glam::Vec2,
+        position: &Vec2,
         world_size: (f32, f32),
         bullet_radius: f32
     ) -> bool {

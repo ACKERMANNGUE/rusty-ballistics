@@ -128,29 +128,12 @@ cargo run --release
 - [x] Generate a new random bullet when pressing a key
 - [x] Collision detection between bullets and objects
 - [x] Collision response and impact effects
-- [ ] Wind
+- [x] Wind
 - [ ] Better projectile physics tuning
+- [ ] Launch project with mouse dragging
 - [ ] Multiple "weapon" types or "firing modes"
 - [ ] Better camera and scene management
 - [ ] Audio feedback
-
-## Keys
-
-### Pause
-
-In order to pause the game, press the spacebar key.
-
-### Reset simulation
-
-In order to reset the game, press the R key.
-
-### Clear world
-
-In order to clean the world, press the C key.
-
-### Create new bullet
-
-In order to create a new random bullet, press the F key.
 
 ## License
 

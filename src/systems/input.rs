@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::bullet_factory::{
+    generate_bullet_at_position_and_velocity,
     generate_random_bullet,
     generate_random_bullet_at_position,
     spawn_bullet_entity,
@@ -11,6 +12,10 @@ use crate::components::bullet_entity::BulletEntity;
 use crate::config::BULLET_COUNT;
 
 use crate::models::world::SimulationWorld;
+
+use bevy::window::PrimaryWindow;
+
+use crate::systems::bullet_launcher::BulletLauncher;
 
 pub fn toggle_pause(keyboard: Res<ButtonInput<KeyCode>>, mut time: ResMut<Time<Virtual>>) {
     if keyboard.just_pressed(KeyCode::Space) {
@@ -49,24 +54,6 @@ pub fn regenerate_bullets(
     }
 }
 
-pub fn create_new_bullet(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut commands: Commands,
-    mut world: ResMut<SimulationWorld>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>
-) {
-    if !keyboard.just_pressed(KeyCode::KeyF) {
-        return;
-    }
-
-    let bullet = generate_random_bullet();
-
-    spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
-
-    world.add_bullet(bullet);
-}
-
 pub fn clear_bullets(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
@@ -98,43 +85,42 @@ pub fn toggle_wind(keyboard: Res<ButtonInput<KeyCode>>, mut world: ResMut<Simula
     }
 }
 
-pub fn spawn_bullet_at_mouse_position(
-    mouse: Res<ButtonInput<MouseButton>>,
-    windows: Query<&Window>,
-    cameras: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
-    mut commands: Commands,
-    mut world: ResMut<SimulationWorld>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>
-) {
-    if !mouse.just_pressed(MouseButton::Left) {
-        return;
-    }
+// pub fn spawn_bullet_at_mouse_position(
+//     mouse: Res<ButtonInput<MouseButton>>,
+//     windows: Query<&Window>,
+//     cameras: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
+//     mut commands: Commands,
+//     mut world: ResMut<SimulationWorld>,
+//     mut meshes: ResMut<Assets<Mesh>>,
+//     mut materials: ResMut<Assets<ColorMaterial>>
+// ) {
+//     if !mouse.just_pressed(MouseButton::Left) {
+//         return;
+//     }
 
-    let Ok(window) = windows.single() else {
-        return;
-    };
+//     let Ok(window) = windows.single() else {
+//         return;
+//     };
 
-    let Ok((camera, camera_transform)) = cameras.single() else {
-        return;
-    };
+//     let Ok((camera, camera_transform)) = cameras.single() else {
+//         return;
+//     };
 
-    let Some(cursor_position) = window.cursor_position() else {
-        return;
-    };
+//     let Some(cursor_position) = window.cursor_position() else {
+//         return;
+//     };
 
-    let Ok(world_position) = camera.viewport_to_world_2d(camera_transform, cursor_position) else {
-        return;
-    };
+//     let Ok(world_position) = camera.viewport_to_world_2d(camera_transform, cursor_position) else {
+//         return;
+//     };
 
-    // convert Bevy's Vec2 to the Vec2 type used by the simulation
-    let position = glam::Vec2::new(world_position.x, world_position.y);
+//     let position = Vec2::new(world_position.x, world_position.y);
 
-    let bullet = generate_random_bullet_at_position(position);
-    spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
+//     let bullet = generate_random_bullet_at_position(position);
+//     spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
 
-    world.add_bullet(bullet);
-}
+//     world.add_bullet(bullet);
+// }
 
 pub fn spawn_bullets_at_mouse_position(
     mouse: Res<ButtonInput<MouseButton>>,
@@ -165,13 +151,58 @@ pub fn spawn_bullets_at_mouse_position(
         return;
     };
 
-    // convert Bevy's Vec2 to the Vec2 type used by the simulation
-    let position = glam::Vec2::new(world_position.x, world_position.y);
+    let position = Vec2::new(world_position.x, world_position.y);
 
     for _ in 0..25 {
         let bullet = generate_random_bullet_at_position(position);
         spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
 
         world.add_bullet(bullet);
+    }
+}
+
+pub fn bullet_launcher_input_system(
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    camera: Single<(&Camera, &GlobalTransform), With<Camera2d>>,
+    mut launcher: ResMut<BulletLauncher>,
+    mut world: ResMut<SimulationWorld>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut commands: Commands
+) {
+    let (camera, camera_transform) = *camera;
+
+    let mouse_world_position = window
+        .cursor_position()
+        .and_then(|cursor_position| {
+            camera.viewport_to_world_2d(camera_transform, cursor_position).ok()
+        });
+
+    if mouse_buttons.just_pressed(MouseButton::Left) {
+        if let Some(position) = mouse_world_position {
+            println!("Mouse pressed at world position: {:?}", position);
+            launcher.set_drag_start(position);
+        }
+    }
+
+    if mouse_buttons.just_released(MouseButton::Left) {
+        if let Some(position) = mouse_world_position {
+            println!("Mouse released at world position: {:?}", position);
+            launcher.set_drag_end(position);
+        }
+
+        if launcher.is_dragging() {
+            let spawn_position = launcher.get_drag_start();
+
+            if let Some(velocity) = launcher.release_drag() {
+                let bullet = generate_bullet_at_position_and_velocity(spawn_position, velocity);
+                spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &bullet);
+                world.add_bullet(bullet);
+                // reset the drag start and end positions after releasing the drag
+                launcher.set_drag_start(Vec2::ZERO);
+                launcher.set_drag_end(Vec2::ZERO);
+            }
+        }
     }
 }

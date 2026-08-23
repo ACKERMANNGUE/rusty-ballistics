@@ -5,8 +5,6 @@ use crate::models::wind::Wind;
 
 use crate::bullet_factory::{ generate_random_bullet, spawn_bullet_entity };
 
-use glam::Vec2;
-
 use crate::config::{ AIR_RESISTANCE, BULLET_COUNT, DELTA_TIME, GRAVITY, WORLD_SIZE };
 
 use crate::models::physics::Physics;

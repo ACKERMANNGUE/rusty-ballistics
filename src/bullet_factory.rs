@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use glam::Vec2;
 
 use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
@@ -8,9 +7,15 @@ use crate::config::{ TRAIL_MAX_POINTS, WORLD_SIZE };
 
 use crate::models::bullet::Bullet;
 
-pub fn generate_random_bullet() -> Bullet {
+pub fn generate_bullet_at_position_and_velocity(position: Vec2, velocity: Vec2) -> Bullet {
     let name = format!("Bullet {}", rand::random::<u32>());
+    let mass = rand::random::<f32>() * 0.1 + 0.01;
+    let color = (rand::random::<f32>(), rand::random::<f32>(), rand::random::<f32>());
 
+    Bullet::new(name, position, velocity, mass, color, rand::random::<u32>())
+}
+
+pub fn generate_random_bullet() -> Bullet {
     let position = Vec2::new(
         rand::random::<f32>() * WORLD_SIZE.0 - WORLD_SIZE.0 / 2.0,
         rand::random::<f32>() * WORLD_SIZE.1 - WORLD_SIZE.1 / 2.0
@@ -20,27 +25,15 @@ pub fn generate_random_bullet() -> Bullet {
         rand::random::<f32>() * 200.0 - 100.0,
         rand::random::<f32>() * 200.0 - 100.0
     );
-
-    let mass = rand::random::<f32>() * 0.1 + 0.01;
-
-    let color = (rand::random::<f32>(), rand::random::<f32>(), rand::random::<f32>());
-
-    Bullet::new(name, position, velocity, mass, color, rand::random::<u32>())
+    generate_bullet_at_position_and_velocity(position, velocity)
 }
 
 pub fn generate_random_bullet_at_position(position: Vec2) -> Bullet {
-    let name = format!("Bullet {}", rand::random::<u32>());
-
     let velocity = Vec2::new(
         rand::random::<f32>() * 200.0 - 100.0,
         rand::random::<f32>() * 200.0 - 100.0
     );
-
-    let mass = rand::random::<f32>() * 0.1 + 0.01;
-
-    let color = (rand::random::<f32>(), rand::random::<f32>(), rand::random::<f32>());
-
-    Bullet::new(name, position, velocity, mass, color, rand::random::<u32>())
+    generate_bullet_at_position_and_velocity(position, velocity)
 }
 
 pub fn spawn_bullet_entity(

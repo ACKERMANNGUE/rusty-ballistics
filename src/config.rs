@@ -11,3 +11,7 @@ pub const BULLET_COUNT: usize = 150;
 pub const TRAIL_MAX_POINTS: usize = 300;
 
 pub const UI_FONT_SIZE: f32 = 16.0;
+
+pub const TURBULENCE_MAX_X: f32 = 0.5;
+pub const TURBULENCE_MAX_Y: f32 = 0.5;
+pub const TURBULENCE_DELTA_MAX: f32 = 0.05;

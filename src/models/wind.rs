@@ -1,4 +1,6 @@
-use glam::Vec2;
+use bevy::prelude::Vec2;
+
+use crate::config::{ TURBULENCE_MAX_X, TURBULENCE_MAX_Y, TURBULENCE_DELTA_MAX };
 
 pub struct Wind {
     direction: Vec2,
@@ -6,10 +8,6 @@ pub struct Wind {
     turbulence: Vec2,
     active: bool,
 }
-
-const TURBULENCE_MAX_X: f32 = 0.5;
-const TURBULENCE_MAX_Y: f32 = 0.5;
-const TURBULENCE_DELTA_MAX: f32 = 0.05;
 
 impl Wind {
     pub fn new(direction: Vec2, speed: f32, active: bool) -> Self {

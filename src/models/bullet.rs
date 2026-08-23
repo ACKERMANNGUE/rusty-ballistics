@@ -1,4 +1,4 @@
-use glam::Vec2;
+use bevy::prelude::Vec2;
 
 const BASE_BULLET_RADIUS: f32 = 10.0;
 
