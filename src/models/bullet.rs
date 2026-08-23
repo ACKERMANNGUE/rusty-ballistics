@@ -1,6 +1,6 @@
 use bevy::prelude::Vec2;
 
-const BASE_BULLET_RADIUS: f32 = 10.0;
+const BASE_BULLET_size: f32 = 10.0;
 
 pub struct Bullet {
     name: String,
@@ -8,9 +8,10 @@ pub struct Bullet {
     velocity: Vec2,
     mass: f32,
     color: (f32, f32, f32),
-    radius: f32,
+    size: f32,
     is_dead: bool,
     id: u32,
+    shape: String
 }
 
 impl Bullet {
@@ -20,7 +21,8 @@ impl Bullet {
         velocity: Vec2,
         mass: f32,
         color: (f32, f32, f32),
-        id: u32
+        id: u32,
+        shape: String
     ) -> Self {
         Self {
             name,
@@ -28,9 +30,10 @@ impl Bullet {
             velocity,
             mass,
             color,
-            radius: Self::compute_bullet_radius(mass),
+            size: Self::compute_bullet_size(mass),
             is_dead: false,
             id,
+            shape
         }
     }
 
@@ -38,12 +41,16 @@ impl Bullet {
         self.id
     }
 
-    fn compute_bullet_radius(mass: f32) -> f32 {
-        BASE_BULLET_RADIUS * mass * 10.0 + BASE_BULLET_RADIUS
+    pub fn get_shape(&self) -> &String {
+        &self.shape
     }
 
-    pub fn get_radius(&self) -> f32 {
-        self.radius
+    fn compute_bullet_size(mass: f32) -> f32 {
+        BASE_BULLET_size * mass * 10.0 + BASE_BULLET_size
+    }
+
+    pub fn get_size(&self) -> f32 {
+        self.size
     }
 
     pub fn get_color(&self) -> (f32, f32, f32) {

@@ -45,7 +45,7 @@ impl Physics {
         for bullet in bullets.iter_mut() {
             let new_position = self.compute_new_position(bullet);
 
-            if self.is_out_of_bounds(&new_position, world_size, bullet.get_radius()) {
+            if self.is_out_of_bounds(&new_position, world_size, bullet.get_size()) {
                 bullet.set_is_dead(true);
                 continue;
             }
@@ -174,7 +174,8 @@ impl Physics {
                         continue;
                     }
 
-                    let combined_radius = bullet.get_radius() + other_bullet.get_radius();
+                    // TODO: Use the actual shapes of the bullets for collision detection instead of just using their sizes
+                    let combined_radius = bullet.get_size() + other_bullet.get_size();
                     if
                         distance_squared < combined_radius * combined_radius &&
                         !bullet.is_dead() &&

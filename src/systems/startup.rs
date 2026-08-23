@@ -9,11 +9,13 @@ use crate::config::{ AIR_RESISTANCE, BULLET_COUNT, DELTA_TIME, GRAVITY, WORLD_SI
 
 use crate::models::physics::Physics;
 use crate::models::world::SimulationWorld;
+use crate::resources::shape_library::ShapeLibrary;
 
 pub fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    shape_library: Res<ShapeLibrary>
 ) {
     let physics = Physics::new(
         DELTA_TIME,
@@ -25,13 +27,13 @@ pub fn setup(
     let mut world = SimulationWorld::new(WORLD_SIZE, physics);
 
     for _ in 0..BULLET_COUNT {
-        world.add_bullet(generate_random_bullet());
+        world.add_bullet(generate_random_bullet(&shape_library));
     }
 
     commands.spawn(Camera2d);
 
     for bullet in world.get_bullets_read().iter() {
-        spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, bullet);
+        spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &shape_library, bullet);
     }
 
     commands.insert_resource(world);
