@@ -1,6 +1,8 @@
 mod components;
+mod collision;
 mod config;
 mod factories;
+mod geometry;
 mod loaders;
 mod models;
 mod rendering;

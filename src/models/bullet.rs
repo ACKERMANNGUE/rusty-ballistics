@@ -1,6 +1,5 @@
 use bevy::prelude::Vec2;
-
-const BASE_BULLET_size: f32 = 10.0;
+use crate::config::BASE_BULLET_SIZE;
 
 pub struct Bullet {
     name: String,
@@ -46,7 +45,7 @@ impl Bullet {
     }
 
     fn compute_bullet_size(mass: f32) -> f32 {
-        BASE_BULLET_size * mass * 10.0 + BASE_BULLET_size
+        BASE_BULLET_SIZE * mass * 10.0 + BASE_BULLET_SIZE
     }
 
     pub fn get_size(&self) -> f32 {

@@ -2,6 +2,7 @@ use bevy::prelude::Resource;
 
 use crate::models::bullet::Bullet;
 use crate::models::physics::Physics;
+use crate::resources::shape_library::ShapeLibrary;
 
 #[derive(Resource)]
 pub struct SimulationWorld {
@@ -43,7 +44,7 @@ impl SimulationWorld {
         self.size
     }
 
-    pub fn update(&mut self) {
-        self.physics.update(&mut self.bullets, self.size);
+    pub fn update(&mut self, shape_library: &ShapeLibrary) {
+        self.physics.update(&mut self.bullets, self.size, shape_library);
     }
 }

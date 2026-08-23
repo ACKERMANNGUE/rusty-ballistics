@@ -2,6 +2,9 @@ use bevy::prelude::Vec2;
 
 use crate::models::bullet::Bullet;
 use crate::models::wind::Wind;
+use crate::resources::shape_library::ShapeLibrary;
+use crate::geometry::bullet_shape::get_bullet_world_shape;
+use crate::collision::separating_axis_theorem::check_polygon_collision;
 
 pub struct Physics {
     delta_time: f32,
@@ -40,7 +43,12 @@ impl Physics {
         &mut self.wind
     }
 
-    pub fn update(&mut self, bullets: &mut Vec<Bullet>, world_size: (f32, f32)) {
+    pub fn update(
+        &mut self,
+        bullets: &mut Vec<Bullet>,
+        world_size: (f32, f32),
+        shape_library: &ShapeLibrary
+    ) {
         self.wind.update_turbulence();
         for bullet in bullets.iter_mut() {
             let new_position = self.compute_new_position(bullet);
@@ -54,10 +62,15 @@ impl Physics {
         }
 
         bullets.retain(|bullet: &Bullet| !bullet.is_dead());
-        self.compute_collisions(bullets, world_size);
+        self.compute_collisions(bullets, world_size, shape_library);
     }
 
-    fn compute_collisions(&self, bullets: &mut Vec<Bullet>, world_size: (f32, f32)) {
+    fn compute_collisions(
+        &self,
+        bullets: &mut Vec<Bullet>,
+        world_size: (f32, f32),
+        shape_library: &ShapeLibrary
+    ) {
         let grid_cell_size = 100.0;
         let spatial_grid = self.build_spatial_grid(bullets, world_size, grid_cell_size);
         let (grid_width, grid_height) = self.compute_grid_size(world_size, grid_cell_size);
@@ -77,7 +90,8 @@ impl Physics {
                 grid_width,
                 grid_height,
                 &spatial_grid,
-                bullets
+                bullets,
+                shape_library
             );
         }
     }
@@ -137,7 +151,8 @@ impl Physics {
         grid_width: usize,
         grid_height: usize,
         spatial_grid: &Vec<Vec<usize>>,
-        bullets: &mut Vec<Bullet>
+        bullets: &mut Vec<Bullet>,
+        shape_library: &ShapeLibrary
     ) {
         // use of isize for x_index and y_index allows us to check neighboring cells without worrying about underflow when subtracting 1
         // compared to using usize which is unsigned and would underflow when subtracting 1 from 0
@@ -166,22 +181,38 @@ impl Physics {
 
                     let bullet = &mut left[bullet_index];
                     let other_bullet = &mut right[0];
-                    let delta = *bullet.get_position() - *other_bullet.get_position();
-                    let distance_squared = delta.length_squared();
-                    if distance_squared == 0.0 {
-                        println!(
-                            "WARNING: Two bullets are at the same position, skipping collision resolution!"
-                        );
+
+                    if bullet.is_dead() || other_bullet.is_dead() {
                         continue;
                     }
 
-                    // TODO: Use the actual shapes of the bullets for collision detection instead of just using their sizes
-                    let combined_radius = bullet.get_size() + other_bullet.get_size();
-                    if
-                        distance_squared < combined_radius * combined_radius &&
-                        !bullet.is_dead() &&
-                        !other_bullet.is_dead()
-                    {
+                    let Some(bullet_world_shape) = get_bullet_world_shape(
+                        bullet,
+                        shape_library
+                    ) else {
+                        println!(
+                            "Warning: Shape '{}' not found in shape library.",
+                            bullet.get_shape()
+                        );
+                        continue;
+                    };
+                    let Some(other_bullet_world_shape) = get_bullet_world_shape(
+                        other_bullet,
+                        shape_library
+                    ) else {
+                        println!(
+                            "Warning: Shape '{}' not found in shape library.",
+                            bullet.get_shape()
+                        );
+                        continue;
+                    };
+
+                    let is_colliding = check_polygon_collision(
+                        &bullet_world_shape,
+                        &other_bullet_world_shape
+                    );
+
+                    if is_colliding {
                         self.compute_collision_response(bullet, other_bullet);
                     }
                 }
@@ -192,12 +223,6 @@ impl Physics {
     fn compute_collision_response(&self, bullet1: &mut Bullet, bullet2: &mut Bullet) {
         let mass1 = bullet1.get_mass();
         let mass2 = bullet2.get_mass();
-
-        if mass1 <= 0.0 || mass2 <= 0.0 {
-            // TODO: Handle this case properly, maybe by removing the bullet from the simulation, maybe by adding a flag "dead" to the bullet,
-            // maybe by doing something else. For now, we just skip the collision resolution.
-            return;
-        }
 
         let position1 = *bullet1.get_position();
         let position2 = *bullet2.get_position();

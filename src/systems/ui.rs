@@ -50,7 +50,7 @@ pub fn update_ui(
     let delta_time = physics.get_delta_time();
     let physics_hz = 1.0 / delta_time;
 
-    let mut content = format!(
+    let content = format!(
         "\
 SIMULATION
 Time: {:.3} s
