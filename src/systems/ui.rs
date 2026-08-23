@@ -15,7 +15,7 @@ pub fn setup_ui(mut commands: Commands) {
                 position_type: PositionType::Absolute,
                 top: Val::Px(12.0),
                 right: Val::Px(12.0),
-                width: Val::Px(420.0),
+                width: Val::Px(450.0),
                 padding: UiRect::all(Val::Px(16.0)),
                 ..default()
             },
@@ -69,6 +69,7 @@ Physics rate: {:.1} Hz
 Wind active ? {}
 Wind: {:.3} m/s
 Wind direction: {:.1} degrees
+Wind turbulence direction: {:.1} degrees
 ",
         simulation_time,
         fps,
@@ -82,7 +83,8 @@ Wind direction: {:.1} degrees
         physics_hz,
         physics.get_wind().is_active(),
         physics.get_wind().get_speed(),
-        physics.get_wind().get_direction_degrees()
+        physics.get_wind().get_direction_degrees(),
+        physics.get_wind().get_turbulence_direction_degrees()
     );
 
     for mut text in &mut query {

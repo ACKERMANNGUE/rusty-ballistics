@@ -38,7 +38,8 @@ impl Physics {
         &mut self.wind
     }
 
-    pub fn update(&self, bullets: &mut Vec<Bullet>, world_size: (f32, f32)) {
+    pub fn update(&mut self, bullets: &mut Vec<Bullet>, world_size: (f32, f32)) {
+        self.wind.update_turbulence();
         for bullet in bullets.iter_mut() {
             let new_position = self.compute_new_position(bullet);
 
@@ -98,7 +99,7 @@ impl Physics {
 
     fn compute_new_position(&self, bullet: &Bullet) -> glam::Vec2 {
         let wind_velocity = self.wind.get_direction() * self.wind.get_speed();
-        let relative_velocity = *bullet.get_velocity() - wind_velocity;
+        let relative_velocity = *bullet.get_velocity() - wind_velocity - *self.wind.get_turbulence();
         let mut drag_force = -self.air_resistance * *bullet.get_velocity();
 
         if self.wind.is_active() {

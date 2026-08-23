@@ -21,7 +21,7 @@ pub fn setup(
         DELTA_TIME,
         AIR_RESISTANCE,
         GRAVITY,
-        Wind::new(Vec2::new(0.5, 1.0), 5.5, 0.0, true)
+        Wind::new(Vec2::new(0.5, 1.0), 5.5, true)
     );
 
     let mut world = SimulationWorld::new(WORLD_SIZE, physics);
