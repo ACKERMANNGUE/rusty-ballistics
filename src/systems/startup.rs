@@ -1,14 +1,13 @@
-use bevy::{ prelude::* };
+use bevy::prelude::*;
 use bevy::window::PresentMode;
 
-use crate::models::wind::Wind;
-
-use crate::bullet_factory::{ generate_random_bullet, spawn_bullet_entity };
-
 use crate::config::{ AIR_RESISTANCE, BULLET_COUNT, DELTA_TIME, GRAVITY, WORLD_SIZE };
+use crate::factories::bullet_factory::generate_random_bullet;
 
 use crate::models::physics::Physics;
+use crate::models::wind::Wind;
 use crate::models::world::SimulationWorld;
+use crate::rendering::bullet_renderer::spawn_bullet_entity;
 use crate::resources::shape_library::ShapeLibrary;
 
 pub fn setup(

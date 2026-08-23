@@ -4,7 +4,7 @@ use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
 use crate::models::world::SimulationWorld;
 
-use crate::systems::rendering::find_bullet_by_id;
+use crate::rendering::bullet_renderer::find_bullet_by_id;
 
 pub fn update_simulation(mut world: ResMut<SimulationWorld>) {
     world.update();
@@ -12,7 +12,7 @@ pub fn update_simulation(mut world: ResMut<SimulationWorld>) {
 
 pub fn record_bullet_trails(
     world: Res<SimulationWorld>,
-    mut query: Query<(&BulletEntity, &mut BulletTrail)>
+    mut query: Query<(&BulletEntity, &mut BulletTrail)>,
 ) {
     let bullets = world.get_bullets_read();
 
@@ -23,14 +23,14 @@ pub fn record_bullet_trails(
 
         let position = bullet.get_position();
 
-        trail.push(bevy::prelude::Vec2::new(position.x, position.y));
+        trail.push(Vec2::new(position.x, position.y));
     }
 }
 
 pub fn despawn_orphan_bullet_entities(
     world: Res<SimulationWorld>,
     mut commands: Commands,
-    query: Query<(Entity, &BulletEntity)>
+    query: Query<(Entity, &BulletEntity)>,
 ) {
     let bullets = world.get_bullets_read();
 

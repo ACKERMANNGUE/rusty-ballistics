@@ -1,10 +1,9 @@
 use bevy::{ gizmos, prelude::* };
 
-use crate::bullet_factory::{
+use crate::factories::bullet_factory::{
     generate_bullet_at_position_and_velocity,
     generate_random_bullet,
     generate_random_bullet_at_position,
-    spawn_bullet_entity,
 };
 
 use crate::components::bullet_entity::BulletEntity;
@@ -12,6 +11,7 @@ use crate::components::bullet_entity::BulletEntity;
 use crate::config::BULLET_COUNT;
 
 use crate::models::world::SimulationWorld;
+use crate::rendering::bullet_renderer::spawn_bullet_entity;
 use crate::resources::shape_library::ShapeLibrary;
 
 use bevy::window::PrimaryWindow;
@@ -78,7 +78,7 @@ pub fn toggle_wind(keyboard: Res<ButtonInput<KeyCode>>, mut world: ResMut<Simula
         return;
     }
 
-    let mut wind = world.get_physics_mut().get_wind_mut();
+    let wind = world.get_physics_mut().get_wind_mut();
 
     if wind.is_active() {
         wind.set_active(false);
@@ -159,14 +159,29 @@ pub fn bullet_launcher_input_system(
             launcher.set_drag_end(position);
         }
 
-        draw_drag_line(&mut gizmos, launcher.get_drag_start(), launcher.get_drag_end(), launcher.get_max_drag_length());
+        draw_drag_line(
+            &mut gizmos,
+            launcher.get_drag_start(),
+            launcher.get_drag_end(),
+            launcher.get_max_drag_length()
+        );
     }
 
     if mouse_buttons.just_released(MouseButton::Left) && launcher.is_dragging() {
         let spawn_position = launcher.get_drag_start();
         if let Some(velocity) = launcher.release_drag() {
-            let bullet = generate_bullet_at_position_and_velocity(spawn_position, velocity * (-1.0), &shape_library);
-            spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &shape_library, &bullet);
+            let bullet = generate_bullet_at_position_and_velocity(
+                spawn_position,
+                velocity * -1.0,
+                &shape_library
+            );
+            spawn_bullet_entity(
+                &mut commands,
+                &mut meshes,
+                &mut materials,
+                &shape_library,
+                &bullet
+            );
             world.add_bullet(bullet);
         }
     }

@@ -1,10 +1,11 @@
-mod bullet_factory;
 mod components;
 mod config;
+mod factories;
 mod loaders;
 mod models;
-mod systems;
+mod rendering;
 mod resources;
+mod systems;
 
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
@@ -12,16 +13,17 @@ use std::path::PathBuf;
 
 use config::HZ;
 
-use systems::input::{
-    regenerate_bullets,
-    toggle_pause,
-    clear_bullets,
-    toggle_wind,
-    spawn_bullets_at_mouse_position,
-    bullet_launcher_input_system,
-};
+use rendering::bullet_renderer::sync_bullet_transforms;
+use rendering::debug_renderer::{ display_bullet_hitbox, draw_bullet_trails, draw_world_bounds };
 
-use systems::rendering::{ draw_bullet_trails, draw_world_bounds, sync_bullet_transforms, display_bullet_hitbox };
+use systems::input::{
+    bullet_launcher_input_system,
+    clear_bullets,
+    regenerate_bullets,
+    spawn_bullets_at_mouse_position,
+    toggle_pause,
+    toggle_wind,
+};
 
 use systems::simulation::{
     despawn_orphan_bullet_entities,
@@ -33,8 +35,8 @@ use systems::startup::{ resize_window, setup };
 
 use systems::ui::{ setup_ui, update_ui };
 
-use systems::bullet_launcher::BulletLauncher;
 use resources::shape_library::ShapeLibrary;
+use systems::bullet_launcher::BulletLauncher;
 
 fn shapes_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))

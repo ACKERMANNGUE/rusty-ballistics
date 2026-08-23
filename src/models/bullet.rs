@@ -11,7 +11,7 @@ pub struct Bullet {
     size: f32,
     is_dead: bool,
     id: u32,
-    shape: String
+    shape: String,
 }
 
 impl Bullet {
@@ -33,7 +33,7 @@ impl Bullet {
             size: Self::compute_bullet_size(mass),
             is_dead: false,
             id,
-            shape
+            shape,
         }
     }
 
@@ -84,5 +84,4 @@ impl Bullet {
     pub fn is_dead(&self) -> bool {
         self.is_dead
     }
-
 }

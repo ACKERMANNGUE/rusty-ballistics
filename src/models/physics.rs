@@ -101,7 +101,8 @@ impl Physics {
 
     fn compute_new_position(&self, bullet: &Bullet) -> Vec2 {
         let wind_velocity = self.wind.get_direction() * self.wind.get_speed();
-        let relative_velocity = *bullet.get_velocity() - wind_velocity - *self.wind.get_turbulence();
+        let relative_velocity =
+            *bullet.get_velocity() - wind_velocity - *self.wind.get_turbulence();
         let mut drag_force = -self.air_resistance * *bullet.get_velocity();
 
         if self.wind.is_active() {

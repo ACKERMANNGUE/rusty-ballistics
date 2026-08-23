@@ -4,33 +4,8 @@ use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
 use crate::models::bullet::Bullet;
 use crate::models::world::SimulationWorld;
-
-pub fn sync_bullet_transforms(
-    world: Res<SimulationWorld>,
-    mut commands: Commands,
-    mut query: Query<(Entity, &BulletEntity, &mut Transform)>
-) {
-    let bullets = world.get_bullets_read();
-
-    for (entity, bullet_entity, mut transform) in &mut query {
-        let Some(bullet) = find_bullet_by_id(bullets, bullet_entity.get_id()) else {
-            commands.entity(entity).despawn();
-            continue;
-        };
-
-        let position = bullet.get_position();
-
-        transform.translation.x = position.x;
-        transform.translation.y = position.y;
-    }
-}
-
-pub fn find_bullet_by_id<'a>(
-    bullets: &'a [crate::models::bullet::Bullet],
-    id: u32
-) -> Option<&'a crate::models::bullet::Bullet> {
-    bullets.iter().find(|bullet| bullet.get_id() == id)
-}
+use crate::rendering::bullet_renderer::find_bullet_by_id;
+use crate::resources::shape_library::ShapeLibrary;
 
 pub fn draw_world_bounds(mut gizmos: Gizmos, world: Res<SimulationWorld>) {
     gizmos.rect_2d(
@@ -59,7 +34,6 @@ pub fn draw_bullet_trails(
         };
 
         let color = bullet.get_color();
-
         gizmos.linestrip_2d(trail.points.iter().copied(), Color::srgb(color.0, color.1, color.2));
     }
 }
@@ -67,24 +41,29 @@ pub fn draw_bullet_trails(
 pub fn display_bullet_hitbox(
     world: Res<SimulationWorld>,
     mut gizmos: Gizmos,
-    query: Query<&BulletEntity>
+    query: Query<&BulletEntity>,
+    shape_library: Res<ShapeLibrary>
 ) {
     let bullets = world.get_bullets_read();
+
     for bullet_entity in &query {
         let bullet = find_bullet_by_id(bullets, bullet_entity.get_id());
         if let Some(bullet) = bullet {
-            draw_bullet_hitbox(bullet, &mut gizmos);
+            draw_bullet_hitbox(bullet, &mut gizmos, &shape_library);
         }
     }
 }
 
-fn draw_bullet_hitbox(bullet: &Bullet, gizmos: &mut Gizmos) {
-    let position = bullet.get_position();
-    let size = bullet.get_size();
+fn draw_bullet_hitbox(bullet: &Bullet, gizmos: &mut Gizmos, shape_library: &ShapeLibrary) {
+    let Some(shape_points) = shape_library.get(bullet.get_shape()) else {
+        println!("Shape '{}' not found in shape library.", bullet.get_shape());
+        return;
+    };
 
-    gizmos.rect_2d(
-        Isometry2d::new(*position, Rot2::degrees(0.0)),
-        Vec2::new(size * 2.0, size * 2.0),
-        Color::srgb(1.0, 0.0, 0.0)
-    );
+    let world_points = shape_points
+        .iter()
+        .chain(shape_points.first())
+        .map(|point| *bullet.get_position() + *point * bullet.get_size());
+
+    gizmos.linestrip_2d(world_points, Color::WHITE);
 }
