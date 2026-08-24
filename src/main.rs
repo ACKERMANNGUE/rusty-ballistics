@@ -40,6 +40,8 @@ use systems::ui::{ setup_ui, update_ui };
 use resources::shape_library::ShapeLibrary;
 use systems::bullet_launcher::BulletLauncher;
 
+use crate::systems::camera_controller::{ camera_movement, camera_zoom, clamp_camera_to_world };
+
 fn shapes_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("src")
@@ -73,5 +75,6 @@ fn main() {
             bullet_launcher_input_system,
         ))
         .add_systems(Update, display_bullet_hitbox)
+        .add_systems(Update, (camera_movement, camera_zoom, clamp_camera_to_world).chain())
         .run();
 }
