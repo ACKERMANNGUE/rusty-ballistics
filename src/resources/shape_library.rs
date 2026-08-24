@@ -37,4 +37,12 @@ impl ShapeLibrary {
 
         self.shapes.keys().choose(&mut rng).cloned()
     }
+
+    pub fn get_shape_names(&self) -> Vec<String> {
+        let mut names: Vec<String> = self.shapes.keys().cloned().collect();
+        names.sort();
+
+        names
+    }
 }
+

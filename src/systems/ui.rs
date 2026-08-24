@@ -1,9 +1,13 @@
 use bevy::diagnostic::{ DiagnosticsStore, FrameTimeDiagnosticsPlugin };
 
 use bevy::prelude::*;
+use bevy_egui::{egui, EguiContexts};
 
 use crate::config::UI_FONT_SIZE;
 use crate::models::world::SimulationWorld;
+
+use crate::resources::shape_library::ShapeLibrary;
+use crate::resources::selected_shape::SelectedShape;
 
 #[derive(Component)]
 pub struct SimulationUiText;
@@ -90,4 +94,34 @@ Wind turbulence direction: {:.1} degrees
     for mut text in &mut query {
         text.0 = content.clone();
     }
+}
+
+pub fn shape_selector_ui(
+    mut contexts: EguiContexts,
+    shape_library: Res<ShapeLibrary>,
+    mut selected_shape: ResMut<SelectedShape>,
+) -> Result {
+    let shape_names = shape_library.get_shape_names();
+
+    egui::Window::new("Bullet settings")
+        .resizable(false)
+        .show(contexts.ctx_mut()?, |ui| {
+            egui::ComboBox::from_label("Shape")
+                .selected_text(selected_shape.get_shape_name())
+                .show_ui(ui, |ui| {
+                    for shape_name in shape_names {
+                        let is_selected =
+                            selected_shape.get_shape_name() == shape_name.as_str();
+
+                        if ui
+                            .selectable_label(is_selected, &shape_name)
+                            .clicked()
+                        {
+                            selected_shape.set_shape_name(shape_name);
+                        }
+                    }
+                });
+        });
+
+    Ok(())
 }
