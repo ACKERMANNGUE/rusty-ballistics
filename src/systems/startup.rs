@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::window::PresentMode;
 
 use crate::config::{ AIR_RESISTANCE, BULLET_COUNT, DELTA_TIME, GRAVITY, WORLD_SIZE };
-use crate::factories::bullet_factory::generate_random_bullet;
+use crate::factories::bullet_factory::{generate_random_bullet, get_random_shape_name};
 
 use crate::models::physics::Physics;
 use crate::models::wind::Wind;
@@ -26,7 +26,7 @@ pub fn setup(
     let mut world = SimulationWorld::new(WORLD_SIZE, physics);
 
     for _ in 0..BULLET_COUNT {
-        let shape_name = shape_library.get_random_shape_name().unwrap_or_else(|| "square".to_string());
+        let shape_name = get_random_shape_name(&shape_library);
         world.add_bullet(generate_random_bullet(&shape_name));
     }
 

@@ -4,7 +4,7 @@ use crate::config::WORLD_SIZE;
 use crate::models::bullet::Bullet;
 use crate::resources::shape_library::ShapeLibrary;
 
-fn get_random_shape_name(shape_library: &ShapeLibrary) -> String {
+pub fn get_random_shape_name(shape_library: &ShapeLibrary) -> String {
     shape_library.get_random_shape_name().unwrap_or_else(|| "square".to_string())
 }
 
