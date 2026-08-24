@@ -40,6 +40,5 @@ pub fn setup(
 
 pub fn resize_window(mut window: Single<&mut Window>) {
     window.resolution.set(WORLD_SIZE.0, WORLD_SIZE.1);
-
     window.present_mode = PresentMode::AutoNoVsync;
 }

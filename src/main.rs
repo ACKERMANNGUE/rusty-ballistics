@@ -15,8 +15,8 @@ use std::path::PathBuf;
 
 use config::HZ;
 
-use rendering::bullet_renderer::sync_bullet_transforms;
-use rendering::debug_renderer::{ display_bullet_hitbox, draw_bullet_trails, draw_world_bounds };
+use rendering::bullet_renderer::{ sync_bullet_transforms };
+use rendering::debug_renderer::{ display_bullet_hitbox, draw_bullet_trails, draw_world_bounds, draw_wind_vector };
 
 use systems::input::{
     bullet_launcher_input_system,
@@ -74,7 +74,7 @@ fn main() {
             spawn_bullets_at_mouse_position,
             bullet_launcher_input_system,
         ))
-        .add_systems(Update, display_bullet_hitbox)
+        .add_systems(Update, (display_bullet_hitbox, draw_wind_vector))
         .add_systems(Update, (camera_movement, camera_zoom, clamp_camera_to_world).chain())
         .run();
 }

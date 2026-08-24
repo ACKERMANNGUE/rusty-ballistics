@@ -14,7 +14,7 @@ pub const UI_FONT_SIZE: f32 = 16.0;
 
 pub const TURBULENCE_MAX_X: f32 = 0.5;
 pub const TURBULENCE_MAX_Y: f32 = 0.5;
-pub const TURBULENCE_DELTA_MAX: f32 = 0.5; // storng turbulence
+pub const TURBULENCE_DELTA_MAX: f32 = 0.005; 
 
 pub const MAX_BULLET_VELOCITY: f32 = 1000.0;
 pub const BASE_BULLET_SIZE: f32 = 0.5;

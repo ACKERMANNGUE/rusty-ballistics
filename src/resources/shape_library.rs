@@ -28,10 +28,6 @@ impl ShapeLibrary {
         self.shapes.get(name)
     }
 
-    pub fn contains(&self, name: &str) -> bool {
-        self.shapes.contains_key(name)
-    }
-
     pub fn get_random_shape_name(&self) -> Option<String> {
         let mut rng = rand::rng();
 
