@@ -1,8 +1,11 @@
+use bevy::asset::RenderAssetUsages;
+use bevy::mesh::PrimitiveTopology;
 use bevy::prelude::*;
 
 use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
 use crate::config::TRAIL_MAX_POINTS;
+use crate::geometry::bullet_shape::get_bullet_world_triangles;
 use crate::models::bullet::Bullet;
 use crate::models::world::SimulationWorld;
 use crate::resources::shape_library::ShapeLibrary;
@@ -35,29 +38,29 @@ pub fn spawn_bullet_entity(
 }
 
 fn create_bullet_mesh(bullet: &Bullet, shape_library: &ShapeLibrary) -> Option<Mesh> {
-    let shape_name = bullet.get_shape();
-    let shape = shape_library.get(shape_name)?;
-    let points = shape.get_vertices();
+    let shape = shape_library.get(bullet.get_shape())?;
 
-    if points.len() < 3 {
-        println!("Shape '{}' must contain at least 3 points.", shape_name);
-        return None;
+    let vertices = shape.get_vertices();
+    let triangles = shape.get_triangles();
+
+    let mut positions = Vec::with_capacity(triangles.len() * 3);
+
+    for triangle in triangles {
+        let local_a = vertices[triangle[0]] * bullet.get_size();
+        let local_b = vertices[triangle[1]] * bullet.get_size();
+        let local_c = vertices[triangle[2]] * bullet.get_size();
+
+        positions.push([local_a.x, local_a.y, 0.0]);
+        positions.push([local_b.x, local_b.y, 0.0]);
+        positions.push([local_c.x, local_c.y, 0.0]);
     }
 
-    let scaled_points: Vec<Vec2> = points
-        .iter()
-        .map(|point| *point * bullet.get_size())
-        .collect();
+    let mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default()).with_inserted_attribute(
+        Mesh::ATTRIBUTE_POSITION,
+        positions
+    );
 
-    let polygon = match ConvexPolygon::new(scaled_points) {
-        Ok(polygon) => polygon,
-        Err(error) => {
-            println!("Shape '{}' is not a valid convex polygon: {:?}", shape_name, error); // TODO: Handle non-convex shapes in the future
-            return None;
-        }
-    };
-
-    Some(Mesh::from(polygon))
+    Some(mesh)
 }
 
 pub(crate) fn find_bullet_by_id(bullets: &[Bullet], id: u32) -> Option<&Bullet> {
