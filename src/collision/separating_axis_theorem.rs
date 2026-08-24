@@ -42,3 +42,17 @@ fn get_polygon_axes(polygon: &[Vec2]) -> Vec<Vec2> {
     axes
 }
 
+pub fn check_triangles_collision(triangles_a: &[[Vec2; 3]], triangles_b: &[[Vec2; 3]]) -> bool {
+    for triangle_1 in triangles_a.iter(){
+        for triangle_2 in triangles_b.iter() {
+            if triangle_1 == triangle_2 {
+                continue;
+            }
+
+            if check_polygon_collision(triangle_1, triangle_2) {
+                return true;
+            }
+        }
+    }
+    false
+}

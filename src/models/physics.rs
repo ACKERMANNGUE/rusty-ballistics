@@ -4,8 +4,8 @@ use crate::geometry::projection::project_polygon;
 use crate::models::bullet::Bullet;
 use crate::models::wind::Wind;
 use crate::resources::shape_library::ShapeLibrary;
-use crate::geometry::bullet_shape::get_bullet_world_shape;
-use crate::collision::separating_axis_theorem::check_polygon_collision;
+use crate::geometry::bullet_shape::{get_bullet_world_shape, get_bullet_world_triangles};
+use crate::collision::separating_axis_theorem::{check_polygon_collision, check_triangles_collision};
 
 pub struct Physics {
     delta_time: f32,
@@ -215,7 +215,7 @@ impl Physics {
                         continue;
                     }
 
-                    let Some(bullet_world_shape) = get_bullet_world_shape(
+                    let Some(bullet_world_triangles) = get_bullet_world_triangles(
                         bullet,
                         shape_library
                     ) else {
@@ -225,20 +225,21 @@ impl Physics {
                         );
                         continue;
                     };
-                    let Some(other_bullet_world_shape) = get_bullet_world_shape(
+
+                    let Some(other_bullet_world_triangles) = get_bullet_world_triangles(
                         other_bullet,
                         shape_library
                     ) else {
                         println!(
                             "Warning: Shape '{}' not found in shape library.",
-                            bullet.get_shape()
+                            other_bullet.get_shape()
                         );
                         continue;
                     };
 
-                    let is_colliding = check_polygon_collision(
-                        &bullet_world_shape,
-                        &other_bullet_world_shape
+                    let is_colliding = check_triangles_collision(
+                        &bullet_world_triangles,
+                        &other_bullet_world_triangles
                     );
 
                     if is_colliding {
