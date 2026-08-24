@@ -42,9 +42,3 @@ pub fn generate_random_bullet_at_position(position: Vec2, shape_name: &str) -> B
 
     generate_bullet_at_position_and_velocity(position, velocity, shape_name)
 }
-
-pub fn generate_random_bullet_with_random_shape(shape_library: &ShapeLibrary) -> Bullet {
-    let shape_name = get_random_shape_name(shape_library);
-
-    generate_random_bullet(&shape_name)
-}

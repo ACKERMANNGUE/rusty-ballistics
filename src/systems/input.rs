@@ -1,7 +1,10 @@
 use bevy::{ prelude::* };
 
 use crate::factories::bullet_factory::{
-    generate_bullet_at_position_and_velocity, generate_random_bullet, generate_random_bullet_at_position, get_random_shape_name,
+    generate_bullet_at_position_and_velocity,
+    generate_random_bullet,
+    generate_random_bullet_at_position,
+    get_random_shape_name,
 };
 
 use crate::components::bullet_entity::BulletEntity;
@@ -10,7 +13,7 @@ use crate::config::BULLET_COUNT;
 
 use crate::models::world::SimulationWorld;
 use crate::rendering::bullet_renderer::spawn_bullet_entity;
-use crate::resources::selected_shape::{SelectedShape};
+use crate::resources::selected_shape::{ SelectedShape };
 use crate::resources::shape_library::ShapeLibrary;
 
 use bevy::window::PrimaryWindow;
@@ -74,7 +77,7 @@ pub fn clear_bullets(
 }
 
 pub fn toggle_wind(keyboard: Res<ButtonInput<KeyCode>>, mut world: ResMut<SimulationWorld>) {
-    if !keyboard.just_pressed(KeyCode::KeyW) {
+    if !keyboard.just_pressed(KeyCode::KeyY) {
         return;
     }
 
