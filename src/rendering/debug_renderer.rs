@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
+use crate::geometry::bullet_shape::get_bullet_world_triangles;
 use crate::models::bullet::Bullet;
 use crate::models::world::SimulationWorld;
 use crate::rendering::bullet_renderer::find_bullet_by_id;
@@ -116,22 +117,15 @@ fn draw_bullet_triangulation_for_bullet(
     gizmos: &mut Gizmos,
     shape_library: &ShapeLibrary
 ) {
-    let Some(shape) = shape_library.get(bullet.get_shape()) else {
-        println!("Shape '{}' not found in shape library.", bullet.get_shape());
-        return;
-    };
-
-    let triangles = shape.get_triangles();
-    let vertices = shape.get_vertices();
-
-    for triangle in triangles {
-        let a = *bullet.get_position() + vertices[triangle[0]] * bullet.get_size();
-        let b = *bullet.get_position() + vertices[triangle[1]] * bullet.get_size();
-        let c = *bullet.get_position() + vertices[triangle[2]] * bullet.get_size();
-
-        gizmos.line_2d(a, b, Color::srgb(0.5, 0.5, 0.5));
-        gizmos.line_2d(b, c, Color::srgb(0.5, 0.5, 0.5));
-        gizmos.line_2d(c, a, Color::srgb(0.5, 0.5, 0.5));
-
+    let triangles = get_bullet_world_triangles(bullet, shape_library);
+    if let Some(triangles) = triangles {
+        for triangle in triangles {
+            gizmos.line_2d(triangle[0], triangle[1], Color::srgb(0.5, 0.5, 0.5));
+            gizmos.line_2d(triangle[1], triangle[2], Color::srgb(0.5, 0.5, 0.5));
+            gizmos.line_2d(triangle[2], triangle[0], Color::srgb(0.5, 0.5, 0.5));
+        }
+    }
+    else {
+        println!("Warning: Could not get triangles for bullet with shape '{}'.", bullet.get_shape());
     }
 }
