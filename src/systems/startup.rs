@@ -26,7 +26,8 @@ pub fn setup(
     let mut world = SimulationWorld::new(WORLD_SIZE, physics);
 
     for _ in 0..BULLET_COUNT {
-        world.add_bullet(generate_random_bullet(&shape_library));
+        let shape_name = shape_library.get_random_shape_name().unwrap_or_else(|| "square".to_string());
+        world.add_bullet(generate_random_bullet(&shape_name));
     }
 
     commands.spawn(Camera2d);

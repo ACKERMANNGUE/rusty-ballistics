@@ -12,6 +12,7 @@ use crate::config::BULLET_COUNT;
 
 use crate::models::world::SimulationWorld;
 use crate::rendering::bullet_renderer::spawn_bullet_entity;
+use crate::resources::selected_shape::{self, SelectedShape};
 use crate::resources::shape_library::ShapeLibrary;
 
 use bevy::window::PrimaryWindow;
@@ -48,7 +49,8 @@ pub fn regenerate_bullets(
     world.get_bullets().clear();
 
     for _ in 0..BULLET_COUNT {
-        world.add_bullet(generate_random_bullet(&shape_library));
+        let shape_name = shape_library.get_random_shape_name().unwrap_or_else(|| "square".to_string());
+        world.add_bullet(generate_random_bullet(&shape_name));
     }
 
     for bullet in world.get_bullets_read().iter() {
@@ -120,7 +122,8 @@ pub fn spawn_bullets_at_mouse_position(
     let position = Vec2::new(world_position.x, world_position.y);
 
     for _ in 0..25 {
-        let bullet = generate_random_bullet_at_position(position, &shape_library);
+        let shape_name = shape_library.get_random_shape_name().unwrap_or_else(|| "square".to_string());
+        let bullet = generate_random_bullet_at_position(position, &shape_name);
         spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &shape_library, &bullet);
 
         world.add_bullet(bullet);
@@ -137,7 +140,8 @@ pub fn bullet_launcher_input_system(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut commands: Commands,
     mut gizmos: Gizmos,
-    shape_library: Res<ShapeLibrary>
+    shape_library: Res<ShapeLibrary>,
+    selected_shape: Res<SelectedShape>
 ) {
     let (camera, camera_transform) = *camera;
 
@@ -170,10 +174,11 @@ pub fn bullet_launcher_input_system(
     if mouse_buttons.just_released(MouseButton::Left) && launcher.is_dragging() {
         let spawn_position = launcher.get_drag_start();
         if let Some(velocity) = launcher.release_drag() {
+            let selected_shape = selected_shape.get_shape_name();
             let bullet = generate_bullet_at_position_and_velocity(
                 spawn_position,
                 velocity * -1.0,
-                &shape_library
+                selected_shape
             );
             spawn_bullet_entity(
                 &mut commands,
