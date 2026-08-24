@@ -94,3 +94,44 @@ pub fn draw_wind_vector(mut gizmos: Gizmos, world: Res<SimulationWorld>) {
         }
     }
 }
+
+pub fn draw_bullet_triangulation(
+    mut gizmos: Gizmos,
+    world: Res<SimulationWorld>,
+    query: Query<&BulletEntity>,
+    shape_library: Res<ShapeLibrary>
+) {
+    let bullets = world.get_bullets_read();
+
+    for bullet_entity in &query {
+        let bullet = find_bullet_by_id(bullets, bullet_entity.get_id());
+        if let Some(bullet) = bullet {
+            draw_bullet_triangulation_for_bullet(bullet, &mut gizmos, &shape_library);
+        }
+    }
+}
+
+fn draw_bullet_triangulation_for_bullet(
+    bullet: &Bullet,
+    gizmos: &mut Gizmos,
+    shape_library: &ShapeLibrary
+) {
+    let Some(shape) = shape_library.get(bullet.get_shape()) else {
+        println!("Shape '{}' not found in shape library.", bullet.get_shape());
+        return;
+    };
+
+    let triangles = shape.get_triangles();
+    let vertices = shape.get_vertices();
+
+    for triangle in triangles {
+        let a = *bullet.get_position() + vertices[triangle[0]] * bullet.get_size();
+        let b = *bullet.get_position() + vertices[triangle[1]] * bullet.get_size();
+        let c = *bullet.get_position() + vertices[triangle[2]] * bullet.get_size();
+
+        gizmos.line_2d(a, b, Color::srgb(0.5, 0.5, 0.5));
+        gizmos.line_2d(b, c, Color::srgb(0.5, 0.5, 0.5));
+        gizmos.line_2d(c, a, Color::srgb(0.5, 0.5, 0.5));
+
+    }
+}
