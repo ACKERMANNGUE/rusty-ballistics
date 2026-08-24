@@ -2,7 +2,6 @@ use bevy::prelude::Vec2;
 use crate::config::BASE_BULLET_SIZE;
 
 pub struct Bullet {
-    name: String,
     position: Vec2,
     velocity: Vec2,
     mass: f32,
@@ -15,7 +14,6 @@ pub struct Bullet {
 
 impl Bullet {
     pub fn new(
-        name: String,
         position: Vec2,
         velocity: Vec2,
         mass: f32,
@@ -24,7 +22,6 @@ impl Bullet {
         shape: String
     ) -> Self {
         Self {
-            name,
             position,
             velocity,
             mass,

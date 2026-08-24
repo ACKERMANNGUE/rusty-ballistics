@@ -5,7 +5,7 @@ use crate::models::bullet::Bullet;
 use crate::models::wind::Wind;
 use crate::resources::shape_library::ShapeLibrary;
 use crate::geometry::bullet_shape::{get_bullet_world_shape, get_bullet_world_triangles};
-use crate::collision::separating_axis_theorem::{check_polygon_collision, check_triangles_collision};
+use crate::collision::separating_axis_theorem::{ check_triangles_collision};
 
 pub struct Physics {
     delta_time: f32,

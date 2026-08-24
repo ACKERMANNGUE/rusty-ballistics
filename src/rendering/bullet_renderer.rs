@@ -5,7 +5,6 @@ use bevy::prelude::*;
 use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
 use crate::config::TRAIL_MAX_POINTS;
-use crate::geometry::bullet_shape::get_bullet_world_triangles;
 use crate::models::bullet::Bullet;
 use crate::models::world::SimulationWorld;
 use crate::resources::shape_library::ShapeLibrary;

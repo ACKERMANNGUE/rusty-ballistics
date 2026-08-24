@@ -13,12 +13,10 @@ pub fn generate_bullet_at_position_and_velocity(
     velocity: Vec2,
     shape_library: &ShapeLibrary
 ) -> Bullet {
-    let name = format!("Bullet {}", rand::random::<u32>());
     let mass = rand::random::<f32>() * 100.0 + 1.0; // Mass between 1 and 100
     let color = (rand::random::<f32>(), rand::random::<f32>(), rand::random::<f32>());
 
     Bullet::new(
-        name,
         position,
         velocity,
         mass,

@@ -1,4 +1,4 @@
-use bevy::{ gizmos, prelude::* };
+use bevy::{ prelude::* };
 
 use crate::factories::bullet_factory::{
     generate_bullet_at_position_and_velocity,
