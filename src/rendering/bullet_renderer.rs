@@ -36,7 +36,8 @@ pub fn spawn_bullet_entity(
 
 fn create_bullet_mesh(bullet: &Bullet, shape_library: &ShapeLibrary) -> Option<Mesh> {
     let shape_name = bullet.get_shape();
-    let points = shape_library.get(shape_name)?;
+    let shape = shape_library.get(shape_name)?;
+    let points = shape.get_vertices();
 
     if points.len() < 3 {
         println!("Shape '{}' must contain at least 3 points.", shape_name);

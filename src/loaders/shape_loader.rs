@@ -5,9 +5,11 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
+use crate::geometry::shape::Shape;
+
 type RawShapeLibrary = HashMap<String, Vec<[f32; 2]>>;
 
-pub fn load_shapes(path: impl AsRef<Path>) -> Result<HashMap<String, Vec<Vec2>>, Box<dyn Error>> {
+pub fn load_shapes(path: impl AsRef<Path>) -> Result<HashMap<String, Shape>, Box<dyn Error>> {
     let path = path.as_ref();
     let file = File::open(path)?;
     let reader = BufReader::new(file);
@@ -18,8 +20,8 @@ pub fn load_shapes(path: impl AsRef<Path>) -> Result<HashMap<String, Vec<Vec2>>,
         .into_iter()
         .map(|(name, points)| {
             let points = points.into_iter().map(Vec2::from_array).collect();
-
-            (name, points)
+            let shape = Shape::new(points);
+            (name, shape)
         })
         .collect();
 

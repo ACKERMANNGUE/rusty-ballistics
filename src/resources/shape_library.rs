@@ -2,12 +2,13 @@ use bevy::prelude::*;
 use std::collections::HashMap;
 use std::path::Path;
 
+use crate::geometry::shape::Shape;
 use crate::loaders::shape_loader::load_shapes;
 use rand::seq::IteratorRandom;
 
 #[derive(Resource)]
 pub struct ShapeLibrary {
-    shapes: HashMap<String, Vec<Vec2>>,
+    shapes: HashMap<String, Shape>,
 }
 
 impl ShapeLibrary {
@@ -17,14 +18,17 @@ impl ShapeLibrary {
             panic!("Failed to load shapes from '{}': {}", path.display(), error)
         });
 
-        for (name, points) in &shapes {
-            println!("Loaded shape '{}': {:?}", name, points);
+        for (name, shape) in &shapes {
+            println!("Loaded shape '{}': {}", name, shape.get_vertices().len());
+            println!("Triangles: {:?}", shape.get_triangles());
+            println!("Is convex: {}", shape.is_convex());
+            println!("-----------------------------");
         }
 
         Self { shapes }
     }
 
-    pub fn get(&self, name: &str) -> Option<&Vec<Vec2>> {
+    pub fn get(&self, name: &str) -> Option<&Shape> {
         self.shapes.get(name)
     }
 

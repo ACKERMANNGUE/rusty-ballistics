@@ -60,9 +60,11 @@ fn draw_bullet_hitbox(bullet: &Bullet, gizmos: &mut Gizmos, shape_library: &Shap
         return;
     };
 
-    let world_points = shape_points
+    let vertices = shape_points.get_vertices();
+
+    let world_points = vertices
         .iter()
-        .chain(shape_points.first())
+        .chain(vertices.first())
         .map(|point| *bullet.get_position() + *point * bullet.get_size());
 
     gizmos.linestrip_2d(world_points, Color::srgb(0.8, 0.8, 0.8));
