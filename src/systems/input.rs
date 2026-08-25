@@ -201,3 +201,9 @@ fn draw_drag_line(gizmos: &mut Gizmos, start: Vec2, end: Vec2, max_drag_length: 
     let blue_intensity = 0.5;
     gizmos.line_2d(start, end, Color::srgb(red_intensity, green_intensity, blue_intensity));
 }
+
+pub fn cancel_bullet_launcher_on_egui(
+    mut bullet_launcher: ResMut<BulletLauncher>,
+) {
+    bullet_launcher.cancel_drag();
+}

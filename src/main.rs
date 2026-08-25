@@ -53,6 +53,11 @@ use systems::startup::{ resize_window, setup };
 
 use systems::ui::simulation_ui;
 
+use bevy::ecs::schedule::common_conditions::not;
+use bevy_egui::input::egui_wants_any_pointer_input;
+
+use crate::systems::input::cancel_bullet_launcher_on_egui;
+
 fn shapes_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("src")
@@ -85,10 +90,18 @@ fn main() {
             draw_world_bounds,
             clear_bullets,
             toggle_wind,
-            spawn_bullets_at_mouse_position,
-            bullet_launcher_input_system,
+            spawn_bullets_at_mouse_position.run_if(not(egui_wants_any_pointer_input)),
+            bullet_launcher_input_system.run_if(not(egui_wants_any_pointer_input)),
+            cancel_bullet_launcher_on_egui.run_if(egui_wants_any_pointer_input),
         ))
         .add_systems(Update, (display_bullet_hitbox, draw_wind_vector, draw_bullet_triangulation))
-        .add_systems(Update, (camera_movement, camera_zoom, clamp_camera_to_world).chain())
+        .add_systems(
+            Update,
+            (
+                camera_movement,
+                camera_zoom.run_if(not(egui_wants_any_pointer_input)),
+                clamp_camera_to_world,
+            ).chain()
+        )
         .run();
 }

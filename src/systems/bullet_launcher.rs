@@ -60,4 +60,10 @@ impl BulletLauncher {
     pub fn get_max_drag_length(&self) -> f32 {
         self.max_velocity / self.velocity_scale
     }
+
+    pub fn cancel_drag(&mut self) {
+        self.is_dragging = false;
+        self.drag_start = Vec2::ZERO;
+        self.drag_end = Vec2::ZERO;
+    }
 }
