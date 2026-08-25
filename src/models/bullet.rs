@@ -13,6 +13,8 @@ pub struct Bullet {
     restitution: f32,
     static_friction: f32,
     dynamic_friction: f32,
+    rotation: f32, // in radians
+    angular_velocity: f32,
 }
 
 impl Bullet {
@@ -39,6 +41,8 @@ impl Bullet {
             restitution,
             static_friction,
             dynamic_friction,
+            rotation: 0.5,
+            angular_velocity: 0.0,
         }
     }
 
@@ -100,5 +104,29 @@ impl Bullet {
 
     pub fn get_dynamic_friction(&self) -> f32 {
         self.dynamic_friction
+    }
+
+    pub fn get_rotation(&self) -> f32 {
+        self.rotation
+    }
+
+    pub fn set_rotation(&mut self, rotation: f32) {
+        self.rotation = rotation;
+    }
+
+    pub fn get_angular_velocity(&self) -> f32 {
+        self.angular_velocity
+    }
+
+    pub fn set_angular_velocity(&mut self, angular_velocity: f32) {
+        self.angular_velocity = angular_velocity;
+    }
+
+    pub fn add_angular_velocity(&mut self, delta: f32) {
+        self.angular_velocity += delta;
+    }
+
+    pub fn add_rotation(&mut self, delta: f32) {
+        self.rotation += delta;
     }
 }

@@ -82,5 +82,6 @@ pub fn sync_bullet_transforms(
         let position = bullet.get_position();
         transform.translation.x = position.x;
         transform.translation.y = position.y;
+        transform.rotation = Quat::from_rotation_z(bullet.get_rotation());
     }
 }

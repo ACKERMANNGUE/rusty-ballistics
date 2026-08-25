@@ -14,7 +14,7 @@ pub fn get_bullet_world_shape(bullet: &Bullet, shape_library: &ShapeLibrary) -> 
 
     let world_points = vertices
         .iter()
-        .map(|point| *bullet.get_position() + *point * bullet.get_size())
+        .map(|point| transform_bullet_vertex(*point, bullet))
         .collect();
 
     Some(world_points)
@@ -34,12 +34,27 @@ pub fn get_bullet_world_triangles(bullet: &Bullet, shape_library: &ShapeLibrary)
         .iter()
         .map(|triangle| {
             [
-                *bullet.get_position() + vertices[triangle[0]] * bullet.get_size(),
-                *bullet.get_position() + vertices[triangle[1]] * bullet.get_size(),
-                *bullet.get_position() + vertices[triangle[2]] * bullet.get_size(),
+                transform_bullet_vertex(vertices[triangle[0]], bullet),
+                transform_bullet_vertex(vertices[triangle[1]], bullet),
+                transform_bullet_vertex(vertices[triangle[2]], bullet),
             ]
         })
         .collect();
 
     Some(world_triangles)
+}
+
+fn transform_bullet_vertex(local_vertex: Vec2, bullet: &Bullet) -> Vec2 {
+    let position = bullet.get_position();
+    let size = bullet.get_size();
+    let rotation = bullet.get_rotation();
+
+    let scaled_vertex = local_vertex * size;
+
+    let rotated_vertex = Vec2::new(
+        scaled_vertex.x * rotation.cos() - scaled_vertex.y * rotation.sin(),
+        scaled_vertex.x * rotation.sin() + scaled_vertex.y * rotation.cos(),
+    );
+
+    rotated_vertex + position
 }
