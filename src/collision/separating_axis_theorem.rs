@@ -1,25 +1,46 @@
 use bevy::prelude::*;
-use crate::geometry::projection::project_polygon;
+use crate::{ collision::collision_info::CollisionInfo, geometry::projection::project_polygon };
 
-
-pub fn check_polygon_collision(polygon1: &[Vec2], polygon2: &[Vec2]) -> bool {
+pub fn check_polygon_collision(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<CollisionInfo> {
     if polygon1.len() < 3 || polygon2.len() < 3 {
-        return false;
+        return None;
     }
 
     let axes_a = get_polygon_axes(polygon1);
     let axes_b = get_polygon_axes(polygon2);
+
+    let mut minimum_overlap = f32::MAX;
+    let mut best_axis = Vec2::ZERO;
 
     for axis in axes_a.iter().chain(axes_b.iter()) {
         let (min_a, max_a) = project_polygon(*axis, polygon1);
         let (min_b, max_b) = project_polygon(*axis, polygon2);
 
         if max_a < min_b || max_b < min_a {
-            return false;
+            return None;
+        }
+
+        let overlap = max_a.min(max_b) - min_a.max(min_b);
+
+        if overlap <= 0.0 {
+            return None;
+        }
+
+        if overlap < minimum_overlap {
+            minimum_overlap = overlap;
+            best_axis = *axis;
         }
     }
 
-    true
+    let center_a = polygon1.iter().copied().sum::<Vec2>() / (polygon1.len() as f32);
+    let center_b = polygon2.iter().copied().sum::<Vec2>() / (polygon2.len() as f32);
+    let direction_a_to_b = center_b - center_a;
+
+    if direction_a_to_b.dot(best_axis) < 0.0 {
+        best_axis = -best_axis;
+    }
+
+    Some(CollisionInfo::new(best_axis, minimum_overlap))
 }
 
 fn get_polygon_axes(polygon: &[Vec2]) -> Vec<Vec2> {
@@ -42,17 +63,31 @@ fn get_polygon_axes(polygon: &[Vec2]) -> Vec<Vec2> {
     axes
 }
 
-pub fn check_triangles_collision(triangles_a: &[[Vec2; 3]], triangles_b: &[[Vec2; 3]]) -> bool {
-    for triangle_1 in triangles_a.iter(){
-        for triangle_2 in triangles_b.iter() {
-            if triangle_1 == triangle_2 {
-                continue;
-            }
+pub fn check_triangles_collision(
+    triangles_a: &[[Vec2; 3]],
+    triangles_b: &[[Vec2; 3]]
+) -> Option<CollisionInfo> {
+    let mut best_collision: Option<CollisionInfo> = None;
 
-            if check_polygon_collision(triangle_1, triangle_2) {
-                return true;
+    for triangle_a in triangles_a {
+        for triangle_b in triangles_b {
+            let Some(collision_info) = check_polygon_collision(triangle_a, triangle_b) else {
+                continue;
+            };
+
+            let should_replace = match &best_collision {
+                Some(current_collision) => {
+                    collision_info.get_penetration_depth() <
+                        current_collision.get_penetration_depth()
+                }
+                None => true,
+            };
+
+            if should_replace {
+                best_collision = Some(collision_info);
             }
         }
     }
-    false
+
+    best_collision
 }

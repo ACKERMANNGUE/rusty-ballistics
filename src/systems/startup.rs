@@ -8,13 +8,15 @@ use crate::models::physics::Physics;
 use crate::models::wind::Wind;
 use crate::models::world::SimulationWorld;
 use crate::rendering::bullet_renderer::spawn_bullet_entity;
+use crate::resources::bullet_spawn_settings::BulletSpawnSettings;
 use crate::resources::shape_library::ShapeLibrary;
 
 pub fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    shape_library: Res<ShapeLibrary>
+    shape_library: Res<ShapeLibrary>,
+    spawn_settings: Res<BulletSpawnSettings>
 ) {
     let physics = Physics::new(
         DELTA_TIME,
@@ -27,7 +29,7 @@ pub fn setup(
 
     for _ in 0..BULLET_COUNT {
         let shape_name = get_random_shape_name(&shape_library);
-        world.add_bullet(generate_random_bullet(&shape_name));
+        world.add_bullet(generate_random_bullet(&shape_name, &spawn_settings));
     }
 
     commands.spawn(Camera2d);

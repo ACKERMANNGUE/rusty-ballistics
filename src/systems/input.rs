@@ -1,3 +1,4 @@
+use bevy::ecs::spawn;
 use bevy::{ prelude::* };
 
 use crate::factories::bullet_factory::{
@@ -13,6 +14,7 @@ use crate::config::BULLET_COUNT;
 
 use crate::models::world::SimulationWorld;
 use crate::rendering::bullet_renderer::spawn_bullet_entity;
+use crate::resources::bullet_spawn_settings::BulletSpawnSettings;
 use crate::resources::selected_shape::{ SelectedShape };
 use crate::resources::shape_library::ShapeLibrary;
 
@@ -37,7 +39,8 @@ pub fn regenerate_bullets(
     bullet_entities: Query<Entity, With<BulletEntity>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    shape_library: Res<ShapeLibrary>
+    shape_library: Res<ShapeLibrary>,
+    spawn_settings: Res<BulletSpawnSettings>
 ) {
     if !keyboard.just_pressed(KeyCode::KeyR) {
         return;
@@ -51,7 +54,7 @@ pub fn regenerate_bullets(
 
     for _ in 0..BULLET_COUNT {
         let shape_name = get_random_shape_name(&shape_library);
-        world.add_bullet(generate_random_bullet(&shape_name));
+        world.add_bullet(generate_random_bullet(&shape_name, &spawn_settings));
     }
 
     for bullet in world.get_bullets_read().iter() {
@@ -98,7 +101,8 @@ pub fn spawn_bullets_at_mouse_position(
     mut world: ResMut<SimulationWorld>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    shape_library: Res<ShapeLibrary>
+    shape_library: Res<ShapeLibrary>,
+    spawn_settings: Res<BulletSpawnSettings>
 ) {
     if !mouse.just_pressed(MouseButton::Right) {
         return;
@@ -124,7 +128,7 @@ pub fn spawn_bullets_at_mouse_position(
 
     for _ in 0..25 {
         let shape_name = get_random_shape_name(&shape_library);
-        let bullet = generate_random_bullet_at_position(position, &shape_name);
+        let bullet = generate_random_bullet_at_position(position, &shape_name, &spawn_settings);
         spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &shape_library, &bullet);
 
         world.add_bullet(bullet);
@@ -142,7 +146,8 @@ pub fn bullet_launcher_input_system(
     mut commands: Commands,
     mut gizmos: Gizmos,
     shape_library: Res<ShapeLibrary>,
-    selected_shape: Res<SelectedShape>
+    selected_shape: Res<SelectedShape>,
+    spawn_settings: Res<BulletSpawnSettings>
 ) {
     let (camera, camera_transform) = *camera;
 
@@ -179,7 +184,8 @@ pub fn bullet_launcher_input_system(
             let bullet = generate_bullet_at_position_and_velocity(
                 spawn_position,
                 velocity * -1.0,
-                selected_shape
+                selected_shape,
+                &spawn_settings
             );
             spawn_bullet_entity(
                 &mut commands,

@@ -10,6 +10,9 @@ pub struct Bullet {
     is_dead: bool,
     id: u32,
     shape: String,
+    restitution: f32,
+    static_friction: f32,
+    dynamic_friction: f32,
 }
 
 impl Bullet {
@@ -19,7 +22,10 @@ impl Bullet {
         mass: f32,
         color: (f32, f32, f32),
         id: u32,
-        shape: String
+        shape: String,
+        restitution: f32,
+        static_friction: f32,
+        dynamic_friction: f32
     ) -> Self {
         Self {
             position,
@@ -30,6 +36,9 @@ impl Bullet {
             is_dead: false,
             id,
             shape,
+            restitution,
+            static_friction,
+            dynamic_friction,
         }
     }
 
@@ -79,5 +88,17 @@ impl Bullet {
 
     pub fn is_dead(&self) -> bool {
         self.is_dead
+    }
+
+    pub fn get_restitution(&self) -> f32 {
+        self.restitution
+    }
+
+    pub fn get_static_friction(&self) -> f32 {
+        self.static_friction
+    }
+
+    pub fn get_dynamic_friction(&self) -> f32 {
+        self.dynamic_friction
     }
 }

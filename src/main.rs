@@ -29,6 +29,7 @@ use rendering::debug_renderer::{
 
 use resources::selected_shape::SelectedShape;
 use resources::shape_library::ShapeLibrary;
+use resources::bullet_spawn_settings::BulletSpawnSettings;
 
 use systems::bullet_launcher::BulletLauncher;
 
@@ -76,6 +77,7 @@ fn main() {
         .insert_resource(Time::<Fixed>::from_hz(HZ as f64))
         .insert_resource(BulletLauncher::new())
         .insert_resource(ShapeLibrary::load(shapes_path()))
+        .insert_resource(BulletSpawnSettings::new())
         .add_systems(Startup, (setup, resize_window))
         .add_systems(EguiPrimaryContextPass, simulation_ui)
         .add_systems(

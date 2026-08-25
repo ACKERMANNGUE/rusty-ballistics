@@ -1,11 +1,14 @@
+use std::f32::EPSILON;
+
 use bevy::prelude::Vec2;
 
+use crate::collision::collision_info::CollisionInfo;
 use crate::geometry::projection::project_polygon;
-use crate::models::bullet::Bullet;
+use crate::models::bullet::{ Bullet };
 use crate::models::wind::Wind;
 use crate::resources::shape_library::ShapeLibrary;
-use crate::geometry::bullet_shape::{get_bullet_world_shape, get_bullet_world_triangles};
-use crate::collision::separating_axis_theorem::{ check_triangles_collision};
+use crate::geometry::bullet_shape::{ get_bullet_world_shape, get_bullet_world_triangles };
+use crate::collision::separating_axis_theorem::{ check_triangles_collision };
 
 pub struct Physics {
     delta_time: f32,
@@ -237,40 +240,106 @@ impl Physics {
                         continue;
                     };
 
-                    let is_colliding = check_triangles_collision(
+                    let Some(collision_info) = check_triangles_collision(
                         &bullet_world_triangles,
                         &other_bullet_world_triangles
-                    );
+                    ) else {
+                        continue;
+                    };
 
-                    if is_colliding {
-                        self.compute_collision_response(bullet, other_bullet);
-                    }
+                    self.compute_collision_response(bullet, other_bullet, collision_info);
                 }
             }
         }
     }
 
-    fn compute_collision_response(&self, bullet1: &mut Bullet, bullet2: &mut Bullet) {
+    fn compute_collision_response(
+        &self,
+        bullet1: &mut Bullet,
+        bullet2: &mut Bullet,
+        collision_info: CollisionInfo
+    ) {
         let mass1 = bullet1.get_mass();
         let mass2 = bullet2.get_mass();
 
-        let position1 = *bullet1.get_position();
-        let position2 = *bullet2.get_position();
+        if mass1 <= EPSILON || mass2 <= EPSILON {
+            return;
+        }
+
+        let inverse_mass1 = 1.0 / mass1;
+        let inverse_mass2 = 1.0 / mass2;
+
+        let inverse_mass_sum = inverse_mass1 + inverse_mass2;
+
+        if inverse_mass_sum <= EPSILON {
+            return;
+        }
+
+        let normal = collision_info.get_normal();
+
+        self.correct_penetration(
+            bullet1,
+            bullet2,
+            &collision_info,
+            inverse_mass1,
+            inverse_mass2,
+            inverse_mass_sum
+        );
 
         let velocity1 = *bullet1.get_velocity();
         let velocity2 = *bullet2.get_velocity();
 
-        let direction = (position2 - position1).normalize();
-        let relative_velocity = velocity1 - velocity2;
-        let s = relative_velocity.dot(direction);
+        let relative_velocity = velocity2 - velocity1;
+        let velocity_along_normal = relative_velocity.dot(normal);
 
-        if s <= 0.0 {
+        if velocity_along_normal >= 0.0 {
             return;
         }
 
-        let impulse = (2.0 * s) / (1.0 / mass1 + 1.0 / mass2);
-        bullet1.set_velocity(velocity1 - (impulse / mass1) * direction);
-        bullet2.set_velocity(velocity2 + (impulse / mass2) * direction);
+        let restitution = bullet1.get_restitution().min(bullet2.get_restitution());
+
+        let normal_impulse_magnitude =
+            (-(1.0 + restitution) * velocity_along_normal) / inverse_mass_sum;
+        let normal_impulse = normal * normal_impulse_magnitude;
+
+        let mut new_velocity1 = velocity1 - normal_impulse * inverse_mass1;
+        let mut new_velocity2 = velocity2 + normal_impulse * inverse_mass2;
+
+        let relative_velocity_after_normal_impulse = new_velocity2 - new_velocity1;
+        let tangent_velocity =
+            relative_velocity_after_normal_impulse -
+            normal * relative_velocity_after_normal_impulse.dot(normal);
+
+        if tangent_velocity.length_squared() > EPSILON {
+            let tangent = tangent_velocity.normalize();
+
+            let friction_impulse_magnitude =
+                -relative_velocity_after_normal_impulse.dot(tangent) / inverse_mass_sum;
+
+            let combined_static_friction = (
+                bullet1.get_static_friction() * bullet2.get_static_friction()
+            ).sqrt();
+
+            let combined_dynamic_friction = (
+                bullet1.get_dynamic_friction() * bullet2.get_dynamic_friction()
+            ).sqrt();
+
+            let friction_impulse = if
+                friction_impulse_magnitude.abs() <=
+                normal_impulse_magnitude * combined_static_friction
+            {
+                tangent * friction_impulse_magnitude
+            } else {
+                tangent * (-normal_impulse_magnitude * combined_dynamic_friction)
+            };
+
+            new_velocity1 -= friction_impulse * inverse_mass1;
+
+            new_velocity2 += friction_impulse * inverse_mass2;
+        }
+
+        bullet1.set_velocity(new_velocity1);
+        bullet2.set_velocity(new_velocity2);
     }
 
     fn build_spatial_grid(
@@ -309,5 +378,38 @@ impl Physics {
             position.x + bullet_radius > half_width ||
             position.y - bullet_radius < -half_height ||
             position.y + bullet_radius > half_height
+    }
+
+    fn correct_penetration(
+        &self,
+        bullet1: &mut Bullet,
+        bullet2: &mut Bullet,
+        collision_info: &CollisionInfo,
+        inverse_mass1: f32,
+        inverse_mass2: f32,
+        inverse_mass_sum: f32
+    ) {
+        if inverse_mass_sum <= EPSILON {
+            return;
+        }
+
+        const PENETRATION_SLOP: f32 = 0.01;
+        const CORRECTION_PERCENTAGE: f32 = 0.8;
+
+        let penetration_depth = collision_info.get_penetration_depth();
+
+        let correction_magnitude = ((penetration_depth - PENETRATION_SLOP).max(0.0) / inverse_mass_sum) * CORRECTION_PERCENTAGE;
+
+        if correction_magnitude <= 0.0 {
+            return;
+        }
+
+        let correction = collision_info.get_normal() * correction_magnitude;
+
+        let position1 = *bullet1.get_position();
+        let position2 = *bullet2.get_position();
+
+        bullet1.set_position(position1 - correction * inverse_mass1);
+        bullet2.set_position(position2 + correction * inverse_mass2);
     }
 }

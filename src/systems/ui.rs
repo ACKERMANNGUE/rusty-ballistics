@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy_egui::{ egui, EguiContexts };
 
 use crate::models::world::SimulationWorld;
+use crate::resources::bullet_spawn_settings::BulletSpawnSettings;
 use crate::resources::selected_shape::SelectedShape;
 use crate::resources::shape_library::ShapeLibrary;
 
@@ -13,7 +14,8 @@ pub fn simulation_ui(
     fixed_time: Res<Time<Fixed>>,
     virtual_time: Res<Time<Virtual>>,
     shape_library: Res<ShapeLibrary>,
-    mut selected_shape: ResMut<SelectedShape>
+    mut selected_shape: ResMut<SelectedShape>,
+    mut spawn_settings: ResMut<BulletSpawnSettings>
 ) -> Result {
     let context = contexts.ctx_mut()?;
 
@@ -155,6 +157,73 @@ pub fn simulation_ui(
                             selected_shape.set_shape_name(shape_name);
                         }
                     }
+                });
+
+            ui.separator();
+            ui.heading("Bullet Spawn Settings");
+            ui.add_space(4.0);
+
+            egui::Grid
+                ::new("bullet_spawn_settings_grid")
+                .num_columns(2)
+                .spacing([20.0, 8.0])
+                .show(ui, |ui| {
+                    let mut mass = spawn_settings.get_mass();
+
+                    ui.label("Mass");
+
+                    if ui.add(egui::Slider::new(&mut mass, 0.1..=100.0).suffix(" kg")).changed() {
+                        spawn_settings.set_mass(mass);
+                    }
+
+                    ui.end_row();
+
+                    let mut restitution = spawn_settings.get_restitution();
+
+                    ui.label("Restitution");
+
+                    if ui.add(egui::Slider::new(&mut restitution, 0.0..=1.0)).changed() {
+                        spawn_settings.set_restitution(restitution);
+                    }
+
+                    ui.end_row();
+
+                    let mut static_friction = spawn_settings.get_static_friction();
+
+                    ui.label("Static friction");
+
+                    if ui.add(egui::Slider::new(&mut static_friction, 0.0..=2.0)).changed() {
+                        spawn_settings.set_static_friction(static_friction);
+
+                        if spawn_settings.get_dynamic_friction() > static_friction {
+                            spawn_settings.set_dynamic_friction(static_friction);
+                        }
+                    }
+
+                    ui.end_row();
+
+                    let maximum_dynamic_friction = spawn_settings.get_static_friction();
+
+                    let mut dynamic_friction = spawn_settings
+                        .get_dynamic_friction()
+                        .min(maximum_dynamic_friction);
+
+                    ui.label("Dynamic friction");
+
+                    if
+                        ui
+                            .add(
+                                egui::Slider::new(
+                                    &mut dynamic_friction,
+                                    0.0..=maximum_dynamic_friction
+                                )
+                            )
+                            .changed()
+                    {
+                        spawn_settings.set_dynamic_friction(dynamic_friction);
+                    }
+
+                    ui.end_row();
                 });
 
             ui.separator();
