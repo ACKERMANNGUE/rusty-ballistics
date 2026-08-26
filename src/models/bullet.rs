@@ -56,22 +56,17 @@ impl Bullet {
         Self {
             position,
             velocity,
-
             mass,
             density,
             size,
             moment_of_inertia,
-
             color,
-
             is_dead: false,
             id,
             shape,
-
             restitution,
             static_friction,
             dynamic_friction,
-
             rotation: 0.0,
             angular_velocity: 0.0,
         }
