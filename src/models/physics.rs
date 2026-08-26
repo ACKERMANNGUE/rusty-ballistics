@@ -56,7 +56,10 @@ impl Physics {
         self.wind.update_turbulence();
 
         for bullet in bullets.iter_mut() {
-            let (new_position, new_velocity, rotation) = self.compute_new_state(bullet, shape_library);
+            let (new_position, new_velocity, rotation) = self.compute_new_state(
+                bullet,
+                shape_library
+            );
 
             if self.is_out_of_bounds(&new_position, world_size, bullet.get_size()) {
                 bullet.set_is_dead(true);
@@ -73,7 +76,11 @@ impl Physics {
         self.compute_collisions(bullets, world_size, shape_library);
     }
 
-    fn compute_new_state(&self, bullet: &Bullet, shape_library: &ShapeLibrary) -> (Vec2, Vec2, f32) {
+    fn compute_new_state(
+        &self,
+        bullet: &Bullet,
+        shape_library: &ShapeLibrary
+    ) -> (Vec2, Vec2, f32) {
         let bullet_velocity = *bullet.get_velocity();
 
         let air_relative_velocity = if self.wind.is_active() {
@@ -277,7 +284,89 @@ impl Physics {
             return;
         }
 
+        let moment_of_inertia1 = bullet1.get_moment_of_inertia();
+        let moment_of_inertia2 = bullet2.get_moment_of_inertia();
+
+        if moment_of_inertia1 <= EPSILON || moment_of_inertia2 <= EPSILON {
+            return;
+        }
+
+        let inverse_inertia1 = 1.0 / moment_of_inertia1;
+        let inverse_inertia2 = 1.0 / moment_of_inertia2;
+
         let normal = collision_info.get_normal();
+        let contact_point = collision_info.get_contact_point();
+
+        let position1 = *bullet1.get_position();
+        let position2 = *bullet2.get_position();
+
+        // lever arms from each center of mass to the contact point
+        let r1 = contact_point - position1;
+        let r2 = contact_point - position2;
+
+        let velocity1 = *bullet1.get_velocity();
+        let velocity2 = *bullet2.get_velocity();
+
+        let angular_velocity1 = bullet1.get_angular_velocity();
+        let angular_velocity2 = bullet2.get_angular_velocity();
+
+        // belocity of each body exactly at the contact point
+        let contact_velocity1 =
+            velocity1 + self.angular_velocity_cross_radius(angular_velocity1, r1);
+
+        let contact_velocity2 =
+            velocity2 + self.angular_velocity_cross_radius(angular_velocity2, r2);
+
+        let relative_velocity = contact_velocity2 - contact_velocity1;
+
+        let velocity_along_normal = relative_velocity.dot(normal);
+
+        // the bodies are moving apart, so no need to resolve the collision
+        if velocity_along_normal >= 0.0 {
+            self.correct_penetration(
+                bullet1,
+                bullet2,
+                &collision_info,
+                inverse_mass1,
+                inverse_mass2,
+                inverse_mass_sum
+            );
+
+            return;
+        }
+
+        let r1_cross_normal = r1.perp_dot(normal);
+        let r2_cross_normal = r2.perp_dot(normal);
+
+        let impulse_denominator =
+            inverse_mass_sum +
+            r1_cross_normal.powi(2) * inverse_inertia1 +
+            r2_cross_normal.powi(2) * inverse_inertia2;
+
+        if impulse_denominator <= EPSILON {
+            return;
+        }
+
+        let restitution = bullet1.get_restitution().min(bullet2.get_restitution());
+
+        let normal_impulse_magnitude =
+            (-(1.0 + restitution) * velocity_along_normal) / impulse_denominator;
+
+        let normal_impulse = normal * normal_impulse_magnitude;
+
+        let new_velocity1 = velocity1 - normal_impulse * inverse_mass1;
+        let new_velocity2 = velocity2 + normal_impulse * inverse_mass2;
+
+        let new_angular_velocity1 =
+            angular_velocity1 - r1.perp_dot(normal_impulse) * inverse_inertia1;
+        let new_angular_velocity2 =
+            angular_velocity2 + r2.perp_dot(normal_impulse) * inverse_inertia2;
+
+        bullet1.set_velocity(new_velocity1);
+        bullet2.set_velocity(new_velocity2);
+
+        bullet1.set_angular_velocity(new_angular_velocity1);
+        bullet2.set_angular_velocity(new_angular_velocity2);
 
         self.correct_penetration(
             bullet1,
@@ -287,61 +376,6 @@ impl Physics {
             inverse_mass2,
             inverse_mass_sum
         );
-
-        let velocity1 = *bullet1.get_velocity();
-        let velocity2 = *bullet2.get_velocity();
-
-        let relative_velocity = velocity2 - velocity1;
-        let velocity_along_normal = relative_velocity.dot(normal);
-
-        if velocity_along_normal >= 0.0 {
-            return;
-        }
-
-        let restitution = bullet1.get_restitution().min(bullet2.get_restitution());
-
-        let normal_impulse_magnitude =
-            (-(1.0 + restitution) * velocity_along_normal) / inverse_mass_sum;
-        let normal_impulse = normal * normal_impulse_magnitude;
-
-        let mut new_velocity1 = velocity1 - normal_impulse * inverse_mass1;
-        let mut new_velocity2 = velocity2 + normal_impulse * inverse_mass2;
-
-        let relative_velocity_after_normal_impulse = new_velocity2 - new_velocity1;
-        let tangent_velocity =
-            relative_velocity_after_normal_impulse -
-            normal * relative_velocity_after_normal_impulse.dot(normal);
-
-        if tangent_velocity.length_squared() > EPSILON {
-            let tangent = tangent_velocity.normalize();
-
-            let friction_impulse_magnitude =
-                -relative_velocity_after_normal_impulse.dot(tangent) / inverse_mass_sum;
-
-            let combined_static_friction = (
-                bullet1.get_static_friction() * bullet2.get_static_friction()
-            ).sqrt();
-
-            let combined_dynamic_friction = (
-                bullet1.get_dynamic_friction() * bullet2.get_dynamic_friction()
-            ).sqrt();
-
-            let friction_impulse = if
-                friction_impulse_magnitude.abs() <=
-                normal_impulse_magnitude * combined_static_friction
-            {
-                tangent * friction_impulse_magnitude
-            } else {
-                tangent * (-normal_impulse_magnitude * combined_dynamic_friction)
-            };
-
-            new_velocity1 -= friction_impulse * inverse_mass1;
-
-            new_velocity2 += friction_impulse * inverse_mass2;
-        }
-
-        bullet1.set_velocity(new_velocity1);
-        bullet2.set_velocity(new_velocity2);
     }
 
     fn build_spatial_grid(
@@ -400,7 +434,9 @@ impl Physics {
 
         let penetration_depth = collision_info.get_penetration_depth();
 
-        let correction_magnitude = ((penetration_depth - PENETRATION_SLOP).max(0.0) / inverse_mass_sum) * CORRECTION_PERCENTAGE;
+        let correction_magnitude =
+            ((penetration_depth - PENETRATION_SLOP).max(0.0) / inverse_mass_sum) *
+            CORRECTION_PERCENTAGE;
 
         if correction_magnitude <= 0.0 {
             return;
@@ -413,5 +449,9 @@ impl Physics {
 
         bullet1.set_position(position1 - correction * inverse_mass1);
         bullet2.set_position(position2 + correction * inverse_mass2);
+    }
+
+    fn angular_velocity_cross_radius(&self, angular_velocity: f32, radius: Vec2) -> Vec2 {
+        Vec2::new(-angular_velocity * radius.y, angular_velocity * radius.x)
     }
 }

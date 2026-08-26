@@ -21,7 +21,6 @@ pub fn generate_bullet_at_position_and_velocity(
     let dynamic_friction = spawn_settings.get_dynamic_friction();
 
     let color = (rand::random::<f32>(), rand::random::<f32>(), rand::random::<f32>());
-
     Bullet::new(position, velocity, mass, color, rand::random::<u32>(), shape_name.to_string(), restitution, static_friction, dynamic_friction)
 }
 

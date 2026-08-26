@@ -15,6 +15,7 @@ pub struct Bullet {
     dynamic_friction: f32,
     rotation: f32, // in radians
     angular_velocity: f32,
+    moment_of_inertia: f32,
 }
 
 impl Bullet {
@@ -27,8 +28,9 @@ impl Bullet {
         shape: String,
         restitution: f32,
         static_friction: f32,
-        dynamic_friction: f32
+        dynamic_friction: f32,
     ) -> Self {
+        let moment_of_inertia = (1.0 / 2.0) * mass * (Self::compute_bullet_size(mass) / 2.0).powi(2);
         Self {
             position,
             velocity,
@@ -42,7 +44,8 @@ impl Bullet {
             static_friction,
             dynamic_friction,
             rotation: 0.0,
-            angular_velocity: 1.0,
+            angular_velocity: 0.0,
+            moment_of_inertia, 
         }
     }
 
@@ -128,5 +131,9 @@ impl Bullet {
 
     pub fn add_rotation(&mut self, delta: f32) {
         self.rotation += delta;
+    }
+
+    pub fn get_moment_of_inertia(&self) -> f32 {
+        self.moment_of_inertia
     }
 }

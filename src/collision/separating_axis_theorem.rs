@@ -40,7 +40,12 @@ pub fn check_polygon_collision(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<C
         best_axis = -best_axis;
     }
 
-    Some(CollisionInfo::new(best_axis, minimum_overlap))
+    let support_point_a = get_support_point(polygon1, best_axis);
+    let support_point_b = get_support_point(polygon2, -best_axis);
+
+    let contact_point = (support_point_a + support_point_b) / 2.0;
+
+    Some(CollisionInfo::new(best_axis, minimum_overlap, contact_point))
 }
 
 fn get_polygon_axes(polygon: &[Vec2]) -> Vec<Vec2> {
@@ -90,4 +95,27 @@ pub fn check_triangles_collision(
     }
 
     best_collision
+}
+
+fn get_support_point(polygon: &[Vec2], direction: Vec2) -> Vec2 {
+    const SUPPORT_EPSILON: f32 = 0.0001;
+
+    let max_projection = polygon
+        .iter()
+        .map(|point| point.dot(direction))
+        .fold(f32::NEG_INFINITY, f32::max);
+
+    let mut support_sum = Vec2::ZERO;
+    let mut support_count = 0;
+
+    for &point in polygon {
+        let projection = point.dot(direction);
+
+        if (max_projection - projection).abs() <= SUPPORT_EPSILON {
+            support_sum += point;
+            support_count += 1;
+        }
+    }
+
+    support_sum / (support_count as f32)
 }
