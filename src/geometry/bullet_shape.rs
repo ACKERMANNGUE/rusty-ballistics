@@ -44,7 +44,7 @@ pub fn get_bullet_world_triangles(bullet: &Bullet, shape_library: &ShapeLibrary)
     Some(world_triangles)
 }
 
-fn transform_bullet_vertex(local_vertex: Vec2, bullet: &Bullet) -> Vec2 {
+pub fn transform_bullet_vertex(local_vertex: Vec2, bullet: &Bullet) -> Vec2 {
     let position = bullet.get_position();
     let size = bullet.get_size();
     let rotation = bullet.get_rotation();

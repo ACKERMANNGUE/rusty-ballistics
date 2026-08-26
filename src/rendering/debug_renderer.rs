@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
-use crate::geometry::bullet_shape::get_bullet_world_triangles;
+use crate::geometry::bullet_shape::{get_bullet_world_triangles, transform_bullet_vertex};
 use crate::models::bullet::Bullet;
 use crate::models::world::SimulationWorld;
 use crate::rendering::bullet_renderer::find_bullet_by_id;
@@ -66,7 +66,7 @@ fn draw_bullet_hitbox(bullet: &Bullet, gizmos: &mut Gizmos, shape_library: &Shap
     let world_points = vertices
         .iter()
         .chain(vertices.first())
-        .map(|point| *bullet.get_position() + *point * bullet.get_size());
+        .map(|point| transform_bullet_vertex(*point, bullet));
 
     gizmos.linestrip_2d(world_points, Color::srgb(0.8, 0.8, 0.8));
 }
