@@ -8,31 +8,29 @@ This project is intended to evolve into a simple but fun ballistic simulator whe
 
 The current implementation is a starting point. The main focus is to keep the code simple, understandable, and extensible while adding gameplay and physics features iteratively.
 
-## Features
-
-Current features in the project:
-
-- Rust project setup
-- Basic ballistic simulation structure
-- Bullet and world models
-- Physics foundation for movement and force calculations
-- Bevy integration for rendering and game loop management
-
 ## Project structure
 
 ```text
-rusty-ballistic/
+rusty-ballistics/
 |-- Cargo.toml
+|-- readme.md
+|-- formulas.md
 |-- src/
 |   |-- main.rs
+|   |-- config.rs
+|   |-- assets/
+|   |   |-- shapes/
+|   |   |   |-- bullets.json
+|   |-- collision/
+|   |-- components/
+|   |-- factories/
+|   |-- geometry/
+|   |-- loaders/
 |   |-- models/
-|   |   |-- bullet.rs
-|   |   |-- mod.rs
-|   |   |-- physics.rs
-|   |   |-- world.rs
+|   |-- rendering/
+|   |-- resources/
+|   |-- systems/
 |-- target/
-|-- output.txt
-|-- readme.md
 ```
 
 ## Tech stack
@@ -115,24 +113,25 @@ cargo run --release
 
 ## Current status checklist
 
-- [x] Rust project created
-- [x] Basic project structure defined
-- [x] Bullet model created
-- [x] World model created
-- [x] Physics foundation added
-- [x] Bevy dependency configured
-- [x] Basic simulation loop setup
-- [x] Bullet trail rendering
-- [x] Pause, reset flow
-- [x] UI for stats / debugging
-- [x] Generate a new random bullet when pressing a key
-- [x] Collision detection between bullets and objects
-- [x] Collision response and impact effects
-- [x] Wind
+- [x] Rust project scaffolded with Cargo and Bevy
+- [x] Basic simulation world and bullet models in place
+- [x] Physics foundation with gravity, drag, and fixed-step updates
+- [x] Bevy integration for rendering, input, and game loop
+- [x] Bullet trail rendering for projectile visualization
+- [x] Pause / resume flow with time control
+- [x] Stats and debugging UI with egui
+- [x] Random bullet generation and bulk spawning controls
+- [x] Collision detection between bullets using SAT-based polygon checks
+- [x] Collision response and restitution / friction handling
+- [x] Wind system with turbulence
+- [x] Drag-to-launch bullet mechanic
+- [x] Camera movement and zoom controls
+- [ ] Angular damping based on shape
+- [ ] Static obstacles
+- [ ] Target entities
+- [ ] Iron Dome or defensive turret mechanic
 - [ ] Better projectile physics tuning
-- [x] Launch project with mouse dragging
-- [ ] Multiple "weapon" types or "firing modes"
-- [ ] Better camera and scene management
+- [ ] Multiple firing modes / weapon types
 - [ ] Audio feedback
 
 ## License
