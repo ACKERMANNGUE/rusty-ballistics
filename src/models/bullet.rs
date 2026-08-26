@@ -30,13 +30,14 @@ impl Bullet {
         static_friction: f32,
         dynamic_friction: f32,
     ) -> Self {
-        let moment_of_inertia = (1.0 / 2.0) * mass * (Self::compute_bullet_size(mass) / 2.0).powi(2);
+        let size = Self::compute_bullet_size(mass);
+        let moment_of_inertia = (1.0 / 2.0) * mass * size.powi(2);
         Self {
             position,
             velocity,
             mass,
             color,
-            size: Self::compute_bullet_size(mass),
+            size,
             is_dead: false,
             id,
             shape,

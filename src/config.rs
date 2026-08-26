@@ -17,3 +17,4 @@ pub const TURBULENCE_DELTA_MAX: f32 = 0.005;
 pub const MAX_BULLET_VELOCITY: f32 = 1000.0;
 pub const BASE_BULLET_SIZE: f32 = 0.5;
 
+pub const EPSILON: f32 = 1e-6;
