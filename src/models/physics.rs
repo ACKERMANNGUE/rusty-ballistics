@@ -352,12 +352,10 @@ impl Physics {
         // belocity of each body exactly at the contact point
         let contact_velocity1 =
             self.get_contact_velocity(velocity1, angular_velocity1, r1);
-
         let contact_velocity2 =
             self.get_contact_velocity(velocity2, angular_velocity2, r2);
 
         let relative_velocity = contact_velocity2 - contact_velocity1;
-
         let velocity_along_normal = relative_velocity.dot(normal);
 
         // the bodies are moving apart, so no need to resolve the collision
@@ -401,13 +399,70 @@ impl Physics {
 
         let normal_impulse = normal * normal_impulse_magnitude;
 
-        let new_velocity1 = velocity1 - normal_impulse * inverse_mass1;
-        let new_velocity2 = velocity2 + normal_impulse * inverse_mass2;
+        let mut new_velocity1 = velocity1 - normal_impulse * inverse_mass1;
+        let mut new_velocity2 = velocity2 + normal_impulse * inverse_mass2;
 
-        let new_angular_velocity1 =
+        let mut new_angular_velocity1 =
             angular_velocity1 - r1.perp_dot(normal_impulse) * inverse_inertia1;
-        let new_angular_velocity2 =
+        let mut new_angular_velocity2 =
             angular_velocity2 + r2.perp_dot(normal_impulse) * inverse_inertia2;
+
+        bullet1.set_velocity(new_velocity1);
+        bullet2.set_velocity(new_velocity2);
+
+        bullet1.set_angular_velocity(new_angular_velocity1);
+        bullet2.set_angular_velocity(new_angular_velocity2);
+
+        let contact_velocity1_after_normal = self.get_contact_velocity(
+            new_velocity1,
+            new_angular_velocity1,
+            r1
+        );
+
+        let contact_velocity2_after_normal = self.get_contact_velocity(
+            new_velocity2,
+            new_angular_velocity2,
+            r2
+        );
+
+        let relative_velocity_after_normal = contact_velocity2_after_normal - contact_velocity1_after_normal;
+        let tangent_velocity = relative_velocity_after_normal - normal * relative_velocity_after_normal.dot(normal);
+
+        if tangent_velocity.length_squared() == 0.0 {
+            return;
+        }
+
+        let tangent = tangent_velocity.normalize();
+
+        let r1_cross_tangent = r1.perp_dot(tangent);
+        let r2_cross_tangent = r2.perp_dot(tangent);
+
+        let friction_denominator = self.get_impulse_denominator(
+            inverse_mass1,
+            inverse_mass2,
+            r1_cross_tangent,
+            r2_cross_tangent,
+            inverse_inertia1,
+            inverse_inertia2
+        );
+
+        let friction_impulse_magnitude = -tangent_velocity.dot(tangent) / friction_denominator;
+
+        let combined_static_friction = (bullet1.get_static_friction() * bullet2.get_static_friction()).sqrt();
+        let combined_dynamic_friction = (bullet1.get_dynamic_friction() * bullet2.get_dynamic_friction()).sqrt();
+
+        // simplified Coulomb's law of friction : if the friction impulse is less than the maximum static friction, use it otherwise, use dynamic friction
+        let friction_impulse = if friction_impulse_magnitude.abs() < normal_impulse_magnitude * combined_static_friction {
+            tangent * friction_impulse_magnitude
+        } else {
+            tangent * -normal_impulse_magnitude * combined_dynamic_friction
+        };
+
+        new_velocity1 = new_velocity1 - friction_impulse * inverse_mass1;
+        new_velocity2 = new_velocity2 + friction_impulse * inverse_mass2;
+
+        new_angular_velocity1 = new_angular_velocity1 - r1.perp_dot(friction_impulse) * inverse_inertia1;
+        new_angular_velocity2 = new_angular_velocity2 + r2.perp_dot(friction_impulse) * inverse_inertia2;
 
         bullet1.set_velocity(new_velocity1);
         bullet2.set_velocity(new_velocity2);

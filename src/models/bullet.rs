@@ -125,14 +125,6 @@ impl Bullet {
         self.angular_velocity = angular_velocity;
     }
 
-    pub fn add_angular_velocity(&mut self, delta: f32) {
-        self.angular_velocity += delta;
-    }
-
-    pub fn add_rotation(&mut self, delta: f32) {
-        self.rotation += delta;
-    }
-
     pub fn get_moment_of_inertia(&self) -> f32 {
         self.moment_of_inertia
     }

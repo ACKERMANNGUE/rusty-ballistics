@@ -11,8 +11,8 @@ pub struct BulletSpawnSettings {
 impl BulletSpawnSettings {
     pub fn new() -> Self {
         Self {
-            mass: 1.0,
-            restitution: 1.0,
+            mass: 20.0,
+            restitution: 0.5,
             static_friction: 0.5,
             dynamic_friction: 0.3,
         }
