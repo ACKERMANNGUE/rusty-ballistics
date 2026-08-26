@@ -9,7 +9,7 @@ use crate::resources::shape_library::ShapeLibrary;
 
 pub fn simulation_ui(
     mut contexts: EguiContexts,
-    world: Res<SimulationWorld>,
+    mut world: ResMut<SimulationWorld>,
     diagnostics: Res<DiagnosticsStore>,
     fixed_time: Res<Time<Fixed>>,
     virtual_time: Res<Time<Virtual>>,
@@ -19,9 +19,6 @@ pub fn simulation_ui(
 ) -> Result {
     let context = contexts.ctx_mut()?;
 
-    let physics = world.get_physics();
-    let bullets = world.get_bullets_read();
-
     let fps = diagnostics
         .get(&FrameTimeDiagnosticsPlugin::FPS)
         .and_then(|diagnostic| diagnostic.smoothed())
@@ -29,12 +26,36 @@ pub fn simulation_ui(
 
     let simulation_time = fixed_time.elapsed_secs_f64();
 
-    let delta_time = physics.get_delta_time();
-    let physics_hz = 1.0 / delta_time;
-
     let world_size = world.get_size();
+    let bullet_count = world.get_bullets_read().len();
 
-    let wind = physics.get_wind();
+    // extracts the physics parameters in order to avoid the borrow checking
+    let (
+        gravity,
+        air_resistance,
+        angular_damping,
+        delta_time,
+        wind_active,
+        wind_speed,
+        wind_direction,
+        wind_turbulence_direction,
+    ) = {
+        let physics = world.get_physics();
+        let wind = physics.get_wind();
+
+        (
+            physics.get_gravity(),
+            physics.get_air_resistance(),
+            physics.get_angular_damping(),
+            physics.get_delta_time(),
+            wind.is_active(),
+            wind.get_speed(),
+            wind.get_direction_degrees(),
+            wind.get_turbulence_direction_degrees(),
+        )
+    };
+
+    let physics_hz = 1.0 / delta_time;
 
     egui::Window
         ::new("Rusty Ballistic")
@@ -86,7 +107,7 @@ pub fn simulation_ui(
                     ui.end_row();
 
                     ui.label("Bullets");
-                    ui.label(bullets.len().to_string());
+                    ui.label(bullet_count.to_string());
                     ui.end_row();
                 });
 
@@ -100,11 +121,29 @@ pub fn simulation_ui(
                 .spacing([20.0, 6.0])
                 .show(ui, |ui| {
                     ui.label("Gravity");
-                    ui.label(format!("{:.3} m/s²", physics.get_gravity()));
+                    ui.label(format!("{gravity:.3} m/s²"));
                     ui.end_row();
 
                     ui.label("Air resistance");
-                    ui.label(format!("{:.3}", physics.get_air_resistance()));
+                    ui.label(format!("{air_resistance:.3}"));
+                    ui.end_row();
+
+                    let mut angular_damping_value = angular_damping;
+
+                    ui.label("Angular damping");
+
+                    if
+                        ui
+                            .add(
+                                egui::Slider
+                                    ::new(&mut angular_damping_value, 0.0..=2.0)
+                                    .suffix(" s⁻¹")
+                            )
+                            .changed()
+                    {
+                        world.get_physics_mut().set_angular_damping(angular_damping_value);
+                    }
+
                     ui.end_row();
 
                     ui.label("Delta time");
@@ -126,19 +165,19 @@ pub fn simulation_ui(
                 .spacing([20.0, 6.0])
                 .show(ui, |ui| {
                     ui.label("Active");
-                    ui.label(if wind.is_active() { "Yes" } else { "No" });
+                    ui.label(if wind_active { "Yes" } else { "No" });
                     ui.end_row();
 
                     ui.label("Speed");
-                    ui.label(format!("{:.3} m/s", wind.get_speed()));
+                    ui.label(format!("{:.3} m/s", wind_speed));
                     ui.end_row();
 
                     ui.label("Direction");
-                    ui.label(format!("{:.1}°", wind.get_direction_degrees()));
+                    ui.label(format!("{:.1}°", wind_direction));
                     ui.end_row();
 
                     ui.label("Turbulence direction");
-                    ui.label(format!("{:.1}°", wind.get_turbulence_direction_degrees()));
+                    ui.label(format!("{:.1}°", wind_turbulence_direction));
                     ui.end_row();
                 });
 

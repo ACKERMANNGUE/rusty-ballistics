@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::PresentMode;
 
-use crate::config::{ AIR_RESISTANCE, BULLET_COUNT, DELTA_TIME, GRAVITY, WORLD_SIZE };
+use crate::config::{ AIR_RESISTANCE, ANGULAR_DAMPING, BULLET_COUNT, DELTA_TIME, GRAVITY, WORLD_SIZE };
 use crate::factories::bullet_factory::{generate_random_bullet, get_random_shape_name};
 
 use crate::models::physics::Physics;
@@ -22,7 +22,8 @@ pub fn setup(
         DELTA_TIME,
         AIR_RESISTANCE,
         GRAVITY,
-        Wind::new(Vec2::new(0.5, 1.0), 5.5, true)
+        Wind::new(Vec2::new(0.5, 1.0), 5.5, true),
+        ANGULAR_DAMPING
     );
 
     let mut world = SimulationWorld::new(WORLD_SIZE, physics);

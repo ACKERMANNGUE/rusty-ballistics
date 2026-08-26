@@ -18,3 +18,6 @@ pub const MAX_BULLET_VELOCITY: f32 = 1000.0;
 pub const BASE_BULLET_SIZE: f32 = 0.5;
 
 pub const EPSILON: f32 = 1e-6;
+
+pub const ANGULAR_DAMPING: f32 = 0.2;
+pub const ANGULAR_VELOCITY_STOP_THRESHOLD: f32 = 0.001;

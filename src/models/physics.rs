@@ -8,22 +8,30 @@ use crate::resources::shape_library::ShapeLibrary;
 use crate::geometry::bullet_shape::{ get_bullet_world_shape, get_bullet_world_triangles };
 use crate::collision::separating_axis_theorem::{ check_triangles_collision };
 
-use crate::config::EPSILON;
+use crate::config::{ ANGULAR_VELOCITY_STOP_THRESHOLD, EPSILON };
 
 pub struct Physics {
     delta_time: f32,
     air_resistance: f32,
     gravity: f32,
     wind: Wind,
+    angular_damping: f32,
 }
 
 impl Physics {
-    pub fn new(delta_time: f32, air_resistance: f32, gravity: f32, wind: Wind) -> Self {
+    pub fn new(
+        delta_time: f32,
+        air_resistance: f32,
+        gravity: f32,
+        wind: Wind,
+        angular_damping: f32
+    ) -> Self {
         Self {
             delta_time,
             air_resistance,
             gravity,
             wind,
+            angular_damping,
         }
     }
 
@@ -56,10 +64,8 @@ impl Physics {
         self.wind.update_turbulence();
 
         for bullet in bullets.iter_mut() {
-            let (new_position, new_velocity, rotation) = self.compute_new_state(
-                bullet,
-                shape_library
-            );
+            let (new_position, new_velocity, rotation, new_angular_velocity) =
+                self.compute_new_state(bullet, shape_library);
 
             if self.is_out_of_bounds(&new_position, world_size, bullet.get_size()) {
                 bullet.set_is_dead(true);
@@ -69,6 +75,7 @@ impl Physics {
             bullet.set_position(new_position);
             bullet.set_velocity(new_velocity);
             bullet.set_rotation(rotation);
+            bullet.set_angular_velocity(new_angular_velocity);
         }
 
         bullets.retain(|bullet| !bullet.is_dead());
@@ -80,7 +87,7 @@ impl Physics {
         &self,
         bullet: &Bullet,
         shape_library: &ShapeLibrary
-    ) -> (Vec2, Vec2, f32) {
+    ) -> (Vec2, Vec2, f32, f32) {
         let bullet_velocity = *bullet.get_velocity();
 
         let air_relative_velocity = if self.wind.is_active() {
@@ -103,10 +110,14 @@ impl Physics {
         let drag_acceleration = drag_force / bullet.get_mass();
         let gravity_acceleration = Vec2::new(0.0, -self.gravity);
         let acceleration = gravity_acceleration + drag_acceleration;
+
         let new_velocity = bullet_velocity + acceleration * self.delta_time;
         let new_position = *bullet.get_position() + new_velocity * self.delta_time;
-        let rotation = bullet.get_rotation() + bullet.get_angular_velocity() * self.delta_time;
-        (new_position, new_velocity, rotation)
+
+        let old_angular_velocity = bullet.get_angular_velocity();
+        let new_angular_velocity = self.compute_angular_velocity(old_angular_velocity);
+        let rotation = bullet.get_rotation() + new_angular_velocity * self.delta_time;
+        (new_position, new_velocity, rotation, new_angular_velocity)
     }
 
     fn compute_collisions(
@@ -554,5 +565,24 @@ impl Physics {
 
     fn angular_velocity_cross_radius(&self, angular_velocity: f32, radius: Vec2) -> Vec2 {
         Vec2::new(-angular_velocity * radius.y, angular_velocity * radius.x)
+    }
+
+    pub fn get_angular_damping(&self) -> f32 {
+        self.angular_damping
+    }
+
+    pub fn set_angular_damping(&mut self, angular_damping: f32) {
+        self.angular_damping = angular_damping;
+    }
+
+    pub fn compute_angular_velocity(&self, angular_velocity: f32) -> f32 {
+        let damping_factor = (-self.angular_damping * self.delta_time).exp();
+        let new_angular_velocity = angular_velocity * damping_factor;
+
+        if new_angular_velocity.abs() < ANGULAR_VELOCITY_STOP_THRESHOLD {
+            0.0
+        } else {
+            new_angular_velocity
+        }
     }
 }
