@@ -53,7 +53,7 @@ pub fn regenerate_bullets(
 
     for _ in 0..BULLET_COUNT {
         let shape_name = get_random_shape_name(&shape_library);
-        world.add_bullet(generate_random_bullet(&shape_name, &spawn_settings));
+        world.add_bullet(generate_random_bullet(&shape_name, &spawn_settings, &shape_library));
     }
 
     for bullet in world.get_bullets_read().iter() {
@@ -127,7 +127,7 @@ pub fn spawn_bullets_at_mouse_position(
 
     for _ in 0..25 {
         let shape_name = get_random_shape_name(&shape_library);
-        let bullet = generate_random_bullet_at_position(position, &shape_name, &spawn_settings);
+        let bullet = generate_random_bullet_at_position(position, &shape_name, &spawn_settings, &shape_library);
         spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &shape_library, &bullet);
 
         world.add_bullet(bullet);
@@ -184,7 +184,8 @@ pub fn bullet_launcher_input_system(
                 spawn_position,
                 velocity * -1.0,
                 selected_shape,
-                &spawn_settings
+                &spawn_settings,
+                &shape_library
             );
             spawn_bullet_entity(
                 &mut commands,

@@ -13,20 +13,39 @@ pub fn generate_bullet_at_position_and_velocity(
     position: Vec2,
     velocity: Vec2,
     shape_name: &str,
-    spawn_settings: &BulletSpawnSettings
+    spawn_settings: &BulletSpawnSettings,
+    shape_library: &ShapeLibrary
 ) -> Bullet {
     let mass = spawn_settings.get_mass();
-    let restitution = spawn_settings.get_restitution();
-    let static_friction = spawn_settings.get_static_friction();
-    let dynamic_friction = spawn_settings.get_dynamic_friction();
 
     let color = (rand::random::<f32>(), rand::random::<f32>(), rand::random::<f32>());
-    Bullet::new(position, velocity, mass, color, rand::random::<u32>(), shape_name.to_string(), restitution, static_friction, dynamic_friction)
+
+    let shape = shape_library
+        .get(shape_name)
+        .unwrap_or_else(|| {
+            panic!("Cannot create bullet: shape '{}' does not exist.", shape_name)
+        });
+
+    let inertia_factor = shape.get_inertia_factor();
+
+    Bullet::new(
+        position,
+        velocity,
+        mass,
+        color,
+        rand::random::<u32>(),
+        shape_name.to_string(),
+        spawn_settings.get_restitution(),
+        spawn_settings.get_static_friction(),
+        spawn_settings.get_dynamic_friction(),
+        inertia_factor
+    )
 }
 
 pub fn generate_random_bullet(
     shape_name: &str,
-    spawn_settings: &BulletSpawnSettings
+    spawn_settings: &BulletSpawnSettings,
+    shape_library: &ShapeLibrary
 ) -> Bullet {
     let position = Vec2::new(
         rand::random::<f32>() * WORLD_SIZE.0 - WORLD_SIZE.0 / 2.0,
@@ -38,18 +57,31 @@ pub fn generate_random_bullet(
         rand::random::<f32>() * 200.0 - 100.0
     );
 
-    generate_bullet_at_position_and_velocity(position, velocity, shape_name, spawn_settings)
+    generate_bullet_at_position_and_velocity(
+        position,
+        velocity,
+        shape_name,
+        spawn_settings,
+        shape_library
+    )
 }
 
 pub fn generate_random_bullet_at_position(
     position: Vec2,
     shape_name: &str,
-    spawn_settings: &BulletSpawnSettings
+    spawn_settings: &BulletSpawnSettings,
+    shape_library: &ShapeLibrary
 ) -> Bullet {
     let velocity = Vec2::new(
         rand::random::<f32>() * 200.0 - 100.0,
         rand::random::<f32>() * 200.0 - 100.0
     );
 
-    generate_bullet_at_position_and_velocity(position, velocity, shape_name, spawn_settings)
+    generate_bullet_at_position_and_velocity(
+        position,
+        velocity,
+        shape_name,
+        spawn_settings,
+        shape_library
+    )
 }
