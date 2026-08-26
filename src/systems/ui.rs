@@ -121,7 +121,7 @@ pub fn simulation_ui(
                 .spacing([20.0, 6.0])
                 .show(ui, |ui| {
                     ui.label("Gravity");
-                    ui.label(format!("{gravity:.3} m/s²"));
+                    ui.label(format!("{gravity:.3} m/s^2"));
                     ui.end_row();
 
                     ui.label("Air resistance");

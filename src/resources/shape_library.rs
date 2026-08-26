@@ -22,6 +22,7 @@ impl ShapeLibrary {
             println!("Loaded shape '{}': {}", name, shape.get_vertices().len());
             println!("Triangles: {:?}", shape.get_triangles());
             println!("Is convex: {}", shape.is_convex());
+            println!("Inertia factor: {}", shape.get_inertia_factor());
             println!("-----------------------------");
         }
 
