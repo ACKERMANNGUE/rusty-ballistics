@@ -1,12 +1,13 @@
 use bevy::prelude::Vec2;
-use crate::config::BASE_BULLET_SIZE;
 
 pub struct Bullet {
     position: Vec2,
     velocity: Vec2,
     mass: f32,
-    color: (f32, f32, f32),
+    density: f32,
     size: f32,
+    moment_of_inertia: f32,
+    color: (f32, f32, f32),
     is_dead: bool,
     id: u32,
     shape: String,
@@ -15,7 +16,6 @@ pub struct Bullet {
     dynamic_friction: f32,
     rotation: f32, // in radians
     angular_velocity: f32,
-    moment_of_inertia: f32,
 }
 
 impl Bullet {
@@ -23,34 +23,57 @@ impl Bullet {
         position: Vec2,
         velocity: Vec2,
         mass: f32,
+        density: f32,
+        size: f32,
+        moment_of_inertia: f32,
         color: (f32, f32, f32),
         id: u32,
         shape: String,
         restitution: f32,
         static_friction: f32,
-        dynamic_friction: f32,
-        inertia_factor: f32,
+        dynamic_friction: f32
     ) -> Self {
-        let size = Self::compute_bullet_size(mass);
+        assert!(
+            mass.is_finite() && mass > 0.0,
+            "Bullet mass must be finite and greater than zero."
+        );
 
-        let moment_of_inertia =
-            mass * size.powi(2) * inertia_factor;
+        assert!(
+            density.is_finite() && density > 0.0,
+            "Bullet density must be finite and greater than zero."
+        );
+
+        assert!(
+            size.is_finite() && size > 0.0,
+            "Bullet size must be finite and greater than zero."
+        );
+
+        assert!(
+            moment_of_inertia.is_finite() && moment_of_inertia > 0.0,
+            "Bullet moment of inertia must be finite and greater than zero."
+        );
 
         Self {
             position,
             velocity,
+
             mass,
-            color,
+            density,
             size,
+            moment_of_inertia,
+
+            color,
+
             is_dead: false,
             id,
             shape,
+
             restitution,
             static_friction,
             dynamic_friction,
+
             rotation: 0.0,
             angular_velocity: 0.0,
-            moment_of_inertia,
         }
     }
 
@@ -62,12 +85,20 @@ impl Bullet {
         &self.shape
     }
 
-    fn compute_bullet_size(mass: f32) -> f32 {
-        BASE_BULLET_SIZE * mass
-    }
-
     pub fn get_size(&self) -> f32 {
         self.size
+    }
+
+    pub fn get_density(&self) -> f32 {
+        self.density
+    }
+
+    pub fn get_mass(&self) -> f32 {
+        self.mass
+    }
+
+    pub fn get_moment_of_inertia(&self) -> f32 {
+        self.moment_of_inertia
     }
 
     pub fn get_color(&self) -> (f32, f32, f32) {
@@ -78,16 +109,12 @@ impl Bullet {
         &self.position
     }
 
-    pub fn get_velocity(&self) -> &Vec2 {
-        &self.velocity
-    }
-
-    pub fn get_mass(&self) -> f32 {
-        self.mass
-    }
-
     pub fn set_position(&mut self, position: Vec2) {
         self.position = position;
+    }
+
+    pub fn get_velocity(&self) -> &Vec2 {
+        &self.velocity
     }
 
     pub fn set_velocity(&mut self, velocity: Vec2) {
@@ -128,9 +155,5 @@ impl Bullet {
 
     pub fn set_angular_velocity(&mut self, angular_velocity: f32) {
         self.angular_velocity = angular_velocity;
-    }
-
-    pub fn get_moment_of_inertia(&self) -> f32 {
-        self.moment_of_inertia
     }
 }

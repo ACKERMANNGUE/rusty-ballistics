@@ -2,7 +2,8 @@ use bevy::prelude::Resource;
 
 #[derive(Resource)]
 pub struct BulletSpawnSettings {
-    mass: f32,
+    size: f32,
+    density: f32,
     restitution: f32,
     static_friction: f32,
     dynamic_friction: f32,
@@ -11,19 +12,28 @@ pub struct BulletSpawnSettings {
 impl BulletSpawnSettings {
     pub fn new() -> Self {
         Self {
-            mass: 20.0,
-            restitution: 0.5,
+            size: 5.0,
+            density: 1.0,
+            restitution: 0.8,
             static_friction: 0.5,
             dynamic_friction: 0.3,
         }
     }
 
-    pub fn get_mass(&self) -> f32 {
-        self.mass
+    pub fn get_size(&self) -> f32 {
+        self.size
     }
 
-    pub fn set_mass(&mut self, mass: f32) {
-        self.mass = mass;
+    pub fn set_size(&mut self, size: f32) {
+        self.size = size.max(0.01);
+    }
+
+    pub fn get_density(&self) -> f32 {
+        self.density
+    }
+
+    pub fn set_density(&mut self, density: f32) {
+        self.density = density.max(0.01);
     }
 
     pub fn get_restitution(&self) -> f32 {

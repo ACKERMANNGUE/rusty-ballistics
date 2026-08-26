@@ -16,7 +16,8 @@ pub fn generate_bullet_at_position_and_velocity(
     spawn_settings: &BulletSpawnSettings,
     shape_library: &ShapeLibrary
 ) -> Bullet {
-    let mass = spawn_settings.get_mass();
+    let size = spawn_settings.get_size();
+    let density = spawn_settings.get_density();
 
     let color = (rand::random::<f32>(), rand::random::<f32>(), rand::random::<f32>());
 
@@ -26,19 +27,26 @@ pub fn generate_bullet_at_position_and_velocity(
             panic!("Cannot create bullet: shape '{}' does not exist.", shape_name)
         });
 
+    let local_area = shape.get_area();
+    let scaled_area = local_area * size.powi(2);
+    let mass = density * scaled_area;
+
     let inertia_factor = shape.get_inertia_factor();
+    let moment_of_inertia = mass * size.powi(2) * inertia_factor;
 
     Bullet::new(
         position,
         velocity,
         mass,
+        density,
+        size,
+        moment_of_inertia,
         color,
         rand::random::<u32>(),
         shape_name.to_string(),
         spawn_settings.get_restitution(),
         spawn_settings.get_static_friction(),
-        spawn_settings.get_dynamic_friction(),
-        inertia_factor
+        spawn_settings.get_dynamic_friction()
     )
 }
 

@@ -207,15 +207,56 @@ pub fn simulation_ui(
                 .num_columns(2)
                 .spacing([20.0, 8.0])
                 .show(ui, |ui| {
-                    let mut mass = spawn_settings.get_mass();
+                    let mut size = spawn_settings.get_size();
 
-                    ui.label("Mass");
+                    ui.label("Size");
 
-                    if ui.add(egui::Slider::new(&mut mass, 0.1..=100.0).suffix(" kg")).changed() {
-                        spawn_settings.set_mass(mass);
+                    if ui.add(egui::Slider::new(&mut size, 0.1..=100.0)).changed() {
+                        spawn_settings.set_size(size);
                     }
 
                     ui.end_row();
+
+                    let mut density = spawn_settings.get_density();
+
+                    ui.label("Density");
+
+                    if ui.add(egui::Slider::new(&mut density, 0.1..=10.0)).changed() {
+                        spawn_settings.set_density(density);
+                    }
+
+                    ui.end_row();
+
+                    let selected_shape_name = selected_shape.get_shape_name();
+
+                    if let Some(shape) = shape_library.get(selected_shape_name) {
+                        let local_area = shape.get_area();
+
+                        let scaled_area = local_area * spawn_settings.get_size().powi(2);
+
+                        let derived_mass = spawn_settings.get_density() * scaled_area;
+
+                        let moment_of_inertia =
+                            derived_mass *
+                            spawn_settings.get_size().powi(2) *
+                            shape.get_inertia_factor();
+
+                        ui.label("Local area");
+                        ui.label(format!("{local_area:.3}"));
+                        ui.end_row();
+
+                        ui.label("Scaled area");
+                        ui.label(format!("{scaled_area:.3}"));
+                        ui.end_row();
+
+                        ui.label("Mass");
+                        ui.label(format!("{derived_mass:.3}"));
+                        ui.end_row();
+
+                        ui.label("Moment of inertia");
+                        ui.label(format!("{moment_of_inertia:.3}"));
+                        ui.end_row();
+                    }
 
                     let mut restitution = spawn_settings.get_restitution();
 

@@ -158,3 +158,18 @@ pub fn compute_polygon_centroid(vertices: &[Vec2]) -> Vec2 {
 
     centroid
 }
+
+pub fn compute_polygon_area(vertices: &[Vec2]) -> f32 {
+    if vertices.len() < 3 {
+        return 0.0;
+    }
+
+    let mut area = 0.0;
+
+    for i in 0..vertices.len() {
+        let j = (i + 1) % vertices.len();
+        area += cross_2d(vertices[i], vertices[j]);
+    }
+
+    area.abs() * 0.5
+}
