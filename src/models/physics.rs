@@ -262,6 +262,45 @@ impl Physics {
         }
     }
 
+    fn get_inverse(&self, a: f32) -> f32 {
+        if a.abs() < EPSILON {
+            0.0
+        } else {
+            1.0 / a
+        }
+    } 
+
+    fn get_lever_arm(&self, contact_point: Vec2, position: Vec2) -> Vec2 {
+        contact_point - position
+    }
+
+    fn get_contact_velocity(&self, velocity: Vec2, angular_velocity: f32, lever_arm: Vec2) -> Vec2 {
+        velocity + self.angular_velocity_cross_radius(angular_velocity, lever_arm)
+    }
+
+    fn get_impulse_denominator(
+        &self,
+        inverse_mass1: f32,
+        inverse_mass2: f32,
+        r1_cross_normal: f32,
+        r2_cross_normal: f32,
+        inverse_inertia1: f32,
+        inverse_inertia2: f32
+    ) -> f32 {
+        inverse_mass1 + inverse_mass2 +
+            r1_cross_normal.powi(2) * inverse_inertia1 +
+            r2_cross_normal.powi(2) * inverse_inertia2
+    }
+
+    fn get_normal_impulse_magnitude(
+        &self,
+        restitution: f32,
+        velocity_along_normal: f32,
+        impulse_denominator: f32
+    ) -> f32 {
+        (-(1.0 + restitution) * velocity_along_normal) / impulse_denominator
+    }
+
     fn compute_collision_response(
         &self,
         bullet1: &mut Bullet,
@@ -275,8 +314,8 @@ impl Physics {
             return;
         }
 
-        let inverse_mass1 = 1.0 / mass1;
-        let inverse_mass2 = 1.0 / mass2;
+        let inverse_mass1 = self.get_inverse(mass1);
+        let inverse_mass2 = self.get_inverse(mass2);
 
         let inverse_mass_sum = inverse_mass1 + inverse_mass2;
 
@@ -291,8 +330,8 @@ impl Physics {
             return;
         }
 
-        let inverse_inertia1 = 1.0 / moment_of_inertia1;
-        let inverse_inertia2 = 1.0 / moment_of_inertia2;
+        let inverse_inertia1 = self.get_inverse(moment_of_inertia1);
+        let inverse_inertia2 = self.get_inverse(moment_of_inertia2);
 
         let normal = collision_info.get_normal();
         let contact_point = collision_info.get_contact_point();
@@ -301,8 +340,8 @@ impl Physics {
         let position2 = *bullet2.get_position();
 
         // lever arms from each center of mass to the contact point
-        let r1 = contact_point - position1;
-        let r2 = contact_point - position2;
+        let r1 = self.get_lever_arm(contact_point, position1);
+        let r2 = self.get_lever_arm(contact_point, position2);
 
         let velocity1 = *bullet1.get_velocity();
         let velocity2 = *bullet2.get_velocity();
@@ -312,10 +351,10 @@ impl Physics {
 
         // belocity of each body exactly at the contact point
         let contact_velocity1 =
-            velocity1 + self.angular_velocity_cross_radius(angular_velocity1, r1);
+            self.get_contact_velocity(velocity1, angular_velocity1, r1);
 
         let contact_velocity2 =
-            velocity2 + self.angular_velocity_cross_radius(angular_velocity2, r2);
+            self.get_contact_velocity(velocity2, angular_velocity2, r2);
 
         let relative_velocity = contact_velocity2 - contact_velocity1;
 
@@ -338,10 +377,14 @@ impl Physics {
         let r1_cross_normal = r1.perp_dot(normal);
         let r2_cross_normal = r2.perp_dot(normal);
 
-        let impulse_denominator =
-            inverse_mass_sum +
-            r1_cross_normal.powi(2) * inverse_inertia1 +
-            r2_cross_normal.powi(2) * inverse_inertia2;
+        let impulse_denominator = self.get_impulse_denominator(
+            inverse_mass1,
+            inverse_mass2,
+            r1_cross_normal,
+            r2_cross_normal,
+            inverse_inertia1,
+            inverse_inertia2
+        );
 
         if impulse_denominator <= EPSILON {
             return;
@@ -350,7 +393,11 @@ impl Physics {
         let restitution = bullet1.get_restitution().min(bullet2.get_restitution());
 
         let normal_impulse_magnitude =
-            (-(1.0 + restitution) * velocity_along_normal) / impulse_denominator;
+            self.get_normal_impulse_magnitude(
+                restitution,
+                velocity_along_normal,
+                impulse_denominator
+            );
 
         let normal_impulse = normal * normal_impulse_magnitude;
 
