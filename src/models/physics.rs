@@ -56,7 +56,7 @@ impl Physics {
         self.wind.update_turbulence();
 
         for bullet in bullets.iter_mut() {
-            let (new_position, new_velocity) = self.compute_new_state(bullet, shape_library);
+            let (new_position, new_velocity, rotation) = self.compute_new_state(bullet, shape_library);
 
             if self.is_out_of_bounds(&new_position, world_size, bullet.get_size()) {
                 bullet.set_is_dead(true);
@@ -65,6 +65,7 @@ impl Physics {
 
             bullet.set_position(new_position);
             bullet.set_velocity(new_velocity);
+            bullet.set_rotation(rotation);
         }
 
         bullets.retain(|bullet| !bullet.is_dead());
@@ -72,7 +73,7 @@ impl Physics {
         self.compute_collisions(bullets, world_size, shape_library);
     }
 
-    fn compute_new_state(&self, bullet: &Bullet, shape_library: &ShapeLibrary) -> (Vec2, Vec2) {
+    fn compute_new_state(&self, bullet: &Bullet, shape_library: &ShapeLibrary) -> (Vec2, Vec2, f32) {
         let bullet_velocity = *bullet.get_velocity();
 
         let air_relative_velocity = if self.wind.is_active() {
@@ -97,7 +98,8 @@ impl Physics {
         let acceleration = gravity_acceleration + drag_acceleration;
         let new_velocity = bullet_velocity + acceleration * self.delta_time;
         let new_position = *bullet.get_position() + new_velocity * self.delta_time;
-        (new_position, new_velocity)
+        let rotation = bullet.get_rotation() + bullet.get_angular_velocity() * self.delta_time;
+        (new_position, new_velocity, rotation)
     }
 
     fn compute_collisions(

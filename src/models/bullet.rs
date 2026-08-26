@@ -41,8 +41,8 @@ impl Bullet {
             restitution,
             static_friction,
             dynamic_friction,
-            rotation: 0.5,
-            angular_velocity: 0.0,
+            rotation: 0.0,
+            angular_velocity: 1.0,
         }
     }
 
