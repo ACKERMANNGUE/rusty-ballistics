@@ -25,6 +25,7 @@ use rendering::debug_renderer::{
     draw_bullet_triangulation,
     draw_wind_vector,
     draw_world_bounds,
+    draw_contact_manifolds,
 };
 
 use resources::selected_shape::SelectedShape;
@@ -96,7 +97,12 @@ fn main() {
             bullet_launcher_input_system.run_if(not(egui_wants_any_pointer_input)),
             cancel_bullet_launcher_on_egui.run_if(egui_wants_any_pointer_input),
         ))
-        .add_systems(Update, (display_bullet_hitbox, draw_wind_vector, draw_bullet_triangulation))
+        .add_systems(Update, (
+            display_bullet_hitbox,
+            draw_wind_vector,
+            draw_bullet_triangulation,
+            draw_contact_manifolds,
+        ))
         .add_systems(
             Update,
             (

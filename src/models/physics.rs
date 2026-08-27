@@ -10,6 +10,9 @@ use crate::collision::separating_axis_theorem::{ check_triangles_collision };
 
 use crate::config::{ ANGULAR_VELOCITY_STOP_THRESHOLD, EPSILON };
 
+use crate::collision::contact_manifold::ContactManifold;
+use crate::collision::separating_axis_theorem::check_triangles_manifold;
+
 pub struct Physics {
     delta_time: f32,
     air_resistance: f32,
@@ -260,14 +263,14 @@ impl Physics {
                         continue;
                     };
 
-                    let Some(collision_info) = check_triangles_collision(
+                    let Some(manifold) = check_triangles_manifold(
                         &bullet_world_triangles,
                         &other_bullet_world_triangles
                     ) else {
                         continue;
                     };
 
-                    self.compute_collision_response(bullet, other_bullet, collision_info);
+                    self.compute_collision_response(bullet, other_bullet, &manifold);
                 }
             }
         }
@@ -313,7 +316,7 @@ impl Physics {
         &self,
         bullet1: &mut Bullet,
         bullet2: &mut Bullet,
-        collision_info: CollisionInfo
+        manifold: &ContactManifold
     ) {
         let mass1 = bullet1.get_mass();
         let mass2 = bullet2.get_mass();
@@ -341,96 +344,123 @@ impl Physics {
         let inverse_inertia1 = self.get_inverse(moment_of_inertia1);
         let inverse_inertia2 = self.get_inverse(moment_of_inertia2);
 
-        let normal = collision_info.get_normal();
-        let contact_point = collision_info.get_contact_point();
+        let normal = manifold.get_normal();
+        let contact_points = manifold.get_contacts();
+        if contact_points.is_empty() {
+            return;
+        }
+        let contact_count = contact_points.len() as f32;
 
         let position1 = *bullet1.get_position();
+
         let position2 = *bullet2.get_position();
 
-        // lever arms from each center of mass to the contact point
-        let r1 = self.get_lever_arm(contact_point, position1);
-        let r2 = self.get_lever_arm(contact_point, position2);
+        let normal = manifold.get_normal();
 
-        let velocity1 = *bullet1.get_velocity();
-        let velocity2 = *bullet2.get_velocity();
+        let penetration_depth = manifold.get_penetration_depth();
 
-        let angular_velocity1 = bullet1.get_angular_velocity();
-        let angular_velocity2 = bullet2.get_angular_velocity();
+        let contacts = manifold.get_contacts();
 
-        // belocity of each body exactly at the contact point
-        let contact_velocity1 = self.get_contact_velocity(velocity1, angular_velocity1, r1);
-        let contact_velocity2 = self.get_contact_velocity(velocity2, angular_velocity2, r2);
-
-        let relative_velocity = contact_velocity2 - contact_velocity1;
-        let velocity_along_normal = relative_velocity.dot(normal);
-
-        // the bodies are moving apart, so no need to resolve the collision
-        if velocity_along_normal >= 0.0 {
-            self.correct_penetration(
-                bullet1,
-                bullet2,
-                &collision_info,
-                inverse_mass1,
-                inverse_mass2,
-                inverse_mass_sum
-            );
-
+        if contacts.is_empty() {
             return;
         }
 
-        let r1_cross_normal = r1.perp_dot(normal);
-        let r2_cross_normal = r2.perp_dot(normal);
+        let contact_count = contacts.len() as f32;
 
-        let impulse_denominator = self.get_impulse_denominator(
-            inverse_mass1,
-            inverse_mass2,
-            r1_cross_normal,
-            r2_cross_normal,
-            inverse_inertia1,
-            inverse_inertia2
-        );
+        let mut new_velocity1 = *bullet1.get_velocity();
+        let mut new_velocity2 = *bullet2.get_velocity();
 
-        if impulse_denominator <= EPSILON {
-            return;
-        }
+        let mut new_angular_velocity1 = bullet1.get_angular_velocity();
+        let mut new_angular_velocity2 = bullet2.get_angular_velocity();
 
         let restitution = bullet1.get_restitution().min(bullet2.get_restitution());
 
-        let normal_impulse_magnitude = self.get_normal_impulse_magnitude(
-            restitution,
-            velocity_along_normal,
-            impulse_denominator
-        );
+        let combined_static_friction = (
+            bullet1.get_static_friction() * bullet2.get_static_friction()
+        ).sqrt();
 
-        let normal_impulse = normal * normal_impulse_magnitude;
+        let combined_dynamic_friction = (
+            bullet1.get_dynamic_friction() * bullet2.get_dynamic_friction()
+        ).sqrt();
 
-        let mut new_velocity1 = velocity1 - normal_impulse * inverse_mass1;
-        let mut new_velocity2 = velocity2 + normal_impulse * inverse_mass2;
+        for &contact_point in contacts {
+            let r1 = self.get_lever_arm(contact_point, position1);
+            let r2 = self.get_lever_arm(contact_point, position2);
 
-        let mut new_angular_velocity1 =
-            angular_velocity1 - r1.perp_dot(normal_impulse) * inverse_inertia1;
-        let mut new_angular_velocity2 =
-            angular_velocity2 + r2.perp_dot(normal_impulse) * inverse_inertia2;
+            let contact_velocity1 = self.get_contact_velocity(
+                new_velocity1,
+                new_angular_velocity1,
+                r1
+            );
 
-        let contact_velocity1_after_normal = self.get_contact_velocity(
-            new_velocity1,
-            new_angular_velocity1,
-            r1
-        );
+            let contact_velocity2 = self.get_contact_velocity(
+                new_velocity2,
+                new_angular_velocity2,
+                r2
+            );
 
-        let contact_velocity2_after_normal = self.get_contact_velocity(
-            new_velocity2,
-            new_angular_velocity2,
-            r2
-        );
+            let relative_velocity = contact_velocity2 - contact_velocity1;
+            let velocity_along_normal = relative_velocity.dot(normal);
 
-        let relative_velocity_after_normal =
-            contact_velocity2_after_normal - contact_velocity1_after_normal;
-        let tangent_velocity =
-            relative_velocity_after_normal - normal * relative_velocity_after_normal.dot(normal);
+            if velocity_along_normal >= 0.0 {
+                continue;
+            }
 
-        // compute friction impulse only if there is a significant tangential velocity
-        if tangent_velocity.length_squared() > EPSILON {
+            let r1_cross_normal = r1.perp_dot(normal);
+            let r2_cross_normal = r2.perp_dot(normal);
+
+            let impulse_denominator = self.get_impulse_denominator(
+                inverse_mass1,
+                inverse_mass2,
+                r1_cross_normal,
+                r2_cross_normal,
+                inverse_inertia1,
+                inverse_inertia2
+            );
+
+            if impulse_denominator <= EPSILON {
+                continue;
+            }
+
+            let normal_impulse_magnitude =
+                self.get_normal_impulse_magnitude(
+                    restitution,
+                    velocity_along_normal,
+                    impulse_denominator
+                ) / contact_count;
+
+            let normal_impulse = normal * normal_impulse_magnitude;
+
+            new_velocity1 -= normal_impulse * inverse_mass1;
+            new_velocity2 += normal_impulse * inverse_mass2;
+
+            new_angular_velocity1 -= r1.perp_dot(normal_impulse) * inverse_inertia1;
+            new_angular_velocity2 += r2.perp_dot(normal_impulse) * inverse_inertia2;
+
+            // recompute contact velocities after the normal impulse before calculating friction
+            let contact_velocity1_after_normal = self.get_contact_velocity(
+                new_velocity1,
+                new_angular_velocity1,
+                r1
+            );
+
+            let contact_velocity2_after_normal = self.get_contact_velocity(
+                new_velocity2,
+                new_angular_velocity2,
+                r2
+            );
+
+            let relative_velocity_after_normal =
+                contact_velocity2_after_normal - contact_velocity1_after_normal;
+
+            let tangent_velocity =
+                relative_velocity_after_normal -
+                normal * relative_velocity_after_normal.dot(normal);
+
+            if tangent_velocity.length_squared() <= EPSILON {
+                continue;
+            }
+
             let tangent = tangent_velocity.normalize();
 
             let r1_cross_tangent = r1.perp_dot(tangent);
@@ -445,33 +475,25 @@ impl Physics {
                 inverse_inertia2
             );
 
-            if friction_denominator > EPSILON {
-                let friction_impulse_magnitude =
-                    -relative_velocity_after_normal.dot(tangent) / friction_denominator;
-
-                let combined_static_friction = (
-                    bullet1.get_static_friction() * bullet2.get_static_friction()
-                ).sqrt();
-                let combined_dynamic_friction = (
-                    bullet1.get_dynamic_friction() * bullet2.get_dynamic_friction()
-                ).sqrt();
-
-                // simplified Coulomb friction model
-                let friction_impulse = if
-                    friction_impulse_magnitude.abs() <=
-                    normal_impulse_magnitude * combined_static_friction
-                {
-                    tangent * friction_impulse_magnitude
-                } else {
-                    tangent * (-normal_impulse_magnitude * combined_dynamic_friction)
-                };
-
-                new_velocity1 -= friction_impulse * inverse_mass1;
-                new_velocity2 += friction_impulse * inverse_mass2;
-
-                new_angular_velocity1 -= r1.perp_dot(friction_impulse) * inverse_inertia1;
-                new_angular_velocity2 += r2.perp_dot(friction_impulse) * inverse_inertia2;
+            if friction_denominator <= EPSILON {
+                continue;
             }
+
+            let friction_impulse_magnitude =
+                -relative_velocity_after_normal.dot(tangent) / friction_denominator / contact_count;
+            let maximum_static_friction = normal_impulse_magnitude * combined_static_friction;
+
+            let friction_impulse = if friction_impulse_magnitude.abs() <= maximum_static_friction {
+                tangent * friction_impulse_magnitude
+            } else {
+                tangent * (-normal_impulse_magnitude * combined_dynamic_friction)
+            };
+
+            new_velocity1 -= friction_impulse * inverse_mass1;
+            new_velocity2 += friction_impulse * inverse_mass2;
+
+            new_angular_velocity1 -= r1.perp_dot(friction_impulse) * inverse_inertia1;
+            new_angular_velocity2 += r2.perp_dot(friction_impulse) * inverse_inertia2;
         }
 
         bullet1.set_velocity(new_velocity1);
@@ -483,7 +505,7 @@ impl Physics {
         self.correct_penetration(
             bullet1,
             bullet2,
-            &collision_info,
+            &manifold,
             inverse_mass1,
             inverse_mass2,
             inverse_mass_sum
@@ -532,7 +554,7 @@ impl Physics {
         &self,
         bullet1: &mut Bullet,
         bullet2: &mut Bullet,
-        collision_info: &CollisionInfo,
+        manifold: &ContactManifold,
         inverse_mass1: f32,
         inverse_mass2: f32,
         inverse_mass_sum: f32
@@ -544,7 +566,7 @@ impl Physics {
         const PENETRATION_SLOP: f32 = 0.01;
         const CORRECTION_PERCENTAGE: f32 = 0.8;
 
-        let penetration_depth = collision_info.get_penetration_depth();
+        let penetration_depth = manifold.get_penetration_depth();
 
         let correction_magnitude =
             ((penetration_depth - PENETRATION_SLOP).max(0.0) / inverse_mass_sum) *
@@ -554,7 +576,7 @@ impl Physics {
             return;
         }
 
-        let correction = collision_info.get_normal() * correction_magnitude;
+        let correction = manifold.get_normal() * correction_magnitude;
 
         let position1 = *bullet1.get_position();
         let position2 = *bullet2.get_position();

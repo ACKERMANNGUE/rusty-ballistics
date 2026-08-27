@@ -1,12 +1,18 @@
 use bevy::prelude::*;
+use bevy_egui::egui::debug_text::print;
 
 use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
-use crate::geometry::bullet_shape::{get_bullet_world_triangles, transform_bullet_vertex};
+use crate::geometry::bullet_shape::{
+    get_bullet_world_triangles,
+    transform_bullet_vertex,
+    get_bullet_world_shape,
+};
 use crate::models::bullet::Bullet;
 use crate::models::world::SimulationWorld;
 use crate::rendering::bullet_renderer::find_bullet_by_id;
 use crate::resources::shape_library::ShapeLibrary;
+use crate::collision::separating_axis_theorem::check_polygon_manifold;
 
 pub fn draw_world_bounds(mut gizmos: Gizmos, world: Res<SimulationWorld>) {
     gizmos.rect_2d(
@@ -124,8 +130,65 @@ fn draw_bullet_triangulation_for_bullet(
             gizmos.line_2d(triangle[1], triangle[2], Color::srgb(0.5, 0.5, 0.5));
             gizmos.line_2d(triangle[2], triangle[0], Color::srgb(0.5, 0.5, 0.5));
         }
+    } else {
+        println!(
+            "Warning: Could not get triangles for bullet with shape '{}'.",
+            bullet.get_shape()
+        );
     }
-    else {
-        println!("Warning: Could not get triangles for bullet with shape '{}'.", bullet.get_shape());
+}
+
+pub fn draw_contact_manifolds(
+    world: Res<SimulationWorld>,
+    shape_library: Res<ShapeLibrary>,
+    mut gizmos: Gizmos
+) {
+    const CONTACT_RADIUS: f32 = 1.0;
+    const NORMAL_LENGTH: f32 = 20.0;
+
+    let bullets = world.get_bullets_read();
+
+    for first_index in 0..bullets.len() {
+        for second_index in first_index + 1..bullets.len() {
+            let bullet1 = &bullets[first_index];
+            let bullet2 = &bullets[second_index];
+
+            let Some(shape1) = shape_library.get(bullet1.get_shape()) else {
+                continue;
+            };
+
+            let Some(shape2) = shape_library.get(bullet2.get_shape()) else {
+                continue;
+            };
+
+            // current implementation only supports convex shapes for collision detection
+            if !shape1.is_convex() || !shape2.is_convex() {
+                continue;
+            }
+
+            let Some(polygon1) = get_bullet_world_shape(bullet1, &shape_library) else {
+                continue;
+            };
+
+            let Some(polygon2) = get_bullet_world_shape(bullet2, &shape_library) else {
+                continue;
+            };
+
+            let Some(manifold) = check_polygon_manifold(&polygon1, &polygon2) else {
+                println!(
+                    "Warning: Could not compute contact manifold for bullets with shapes '{}' and '{}'.",
+                    bullet1.get_shape(),
+                    bullet2.get_shape()
+                );
+                continue;
+            };
+
+            let normal = manifold.get_normal();
+
+            for &contact in manifold.get_contacts() {
+                gizmos.circle_2d(contact, CONTACT_RADIUS, Color::srgb(0.0, 1.0, 0.0));
+                gizmos.line_2d(contact, contact + normal * NORMAL_LENGTH, Color::srgb(1.0, 0.0, 0.0));
+            }
+        }
     }
 }

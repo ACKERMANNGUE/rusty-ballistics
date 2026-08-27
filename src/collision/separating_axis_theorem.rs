@@ -1,27 +1,30 @@
 use bevy::prelude::*;
 
 use crate::{
-    collision::collision_info::CollisionInfo, config::EPSILON, geometry::{ polygon::compute_polygon_centroid, projection::project_polygon },
+    collision::collision_info::CollisionInfo,
+    config::EPSILON,
+    geometry::{ polygon::compute_polygon_centroid, projection::project_polygon },
 };
 
+use crate::collision::contact_manifold::{ build_contact_manifold, ContactManifold };
+
 #[derive(Clone, Copy, Debug)]
-enum ReferencePolygon {
+pub(crate) enum ReferencePolygon {
     Polygon1,
     Polygon2,
 }
 
 #[derive(Clone, Copy, Debug)]
-struct SATResult {
-    normal: Vec2,
-    penetration_depth: f32,
-    reference_polygon: ReferencePolygon,
-    reference_edge_index: usize,
+pub(crate) struct SATResult {
+    pub(crate) normal: Vec2,
+    pub(crate) penetration_depth: f32,
+    pub(crate) reference_polygon: ReferencePolygon,
+    pub(crate) reference_edge_index: usize,
 }
 
 #[derive(Clone, Copy, Debug)]
 struct CollisionAxis {
     normal: Vec2,
-    edge_index: usize,
 }
 
 pub fn check_polygon_collision(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<CollisionInfo> {
@@ -42,7 +45,7 @@ pub fn check_polygon_collision(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<C
     Some(CollisionInfo::new(normal, penetration_depth, contact_point))
 }
 
-fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<SATResult> {
+pub(crate) fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<SATResult> {
     if polygon1.len() < 3 || polygon2.len() < 3 {
         return None;
     }
@@ -54,7 +57,6 @@ fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<SATResult>
 
     let mut best_axis = Vec2::ZERO;
     let mut reference_polygon = ReferencePolygon::Polygon1;
-    let mut reference_edge_index = 0;
 
     for axis in &axes_1 {
         let (min_1, max_1) = project_polygon(axis.normal, polygon1);
@@ -74,7 +76,6 @@ fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<SATResult>
             minimum_overlap = overlap;
             best_axis = axis.normal;
             reference_polygon = ReferencePolygon::Polygon1;
-            reference_edge_index = axis.edge_index;
         }
     }
 
@@ -96,7 +97,6 @@ fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<SATResult>
             minimum_overlap = overlap;
             best_axis = axis.normal;
             reference_polygon = ReferencePolygon::Polygon2;
-            reference_edge_index = axis.edge_index;
         }
     }
 
@@ -112,6 +112,11 @@ fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<SATResult>
     if direction_1_to_2.dot(best_axis) < 0.0 {
         best_axis = -best_axis;
     }
+
+    let reference_edge_index = match reference_polygon {
+        ReferencePolygon::Polygon1 => find_reference_edge_index(polygon1, best_axis)?,
+        ReferencePolygon::Polygon2 => find_reference_edge_index(polygon2, best_axis)?,
+    };
 
     Some(SATResult {
         normal: best_axis,
@@ -130,7 +135,10 @@ fn get_polygon_axes(polygon: &[Vec2]) -> Vec<CollisionAxis> {
         let next_point = polygon[(i + 1) % polygon.len()];
 
         let edge_center = (current_point + next_point) * 0.5;
-        let mut normal = Vec2::new(-(next_point.y - current_point.y), next_point.x - current_point.x).normalize();
+        let mut normal = Vec2::new(
+            -(next_point.y - current_point.y),
+            next_point.x - current_point.x
+        ).normalize();
         let direction_to_center = polygon_center - edge_center;
         if normal.dot(direction_to_center) < 0.0 {
             normal = -normal;
@@ -144,7 +152,6 @@ fn get_polygon_axes(polygon: &[Vec2]) -> Vec<CollisionAxis> {
         let normal = Vec2::new(-edge.y, edge.x).normalize();
         axes.push(CollisionAxis {
             normal,
-            edge_index: i,
         });
     }
 
@@ -180,6 +187,34 @@ pub fn check_triangles_collision(
     best_collision
 }
 
+pub fn check_triangles_manifold(
+    triangles_a: &[[Vec2; 3]],
+    triangles_b: &[[Vec2; 3]]
+) -> Option<ContactManifold> {
+    let mut best_manifold: Option<ContactManifold> = None;
+
+    for triangle_a in triangles_a {
+        for triangle_b in triangles_b {
+            let Some(manifold) = check_polygon_manifold(triangle_a, triangle_b) else {
+                continue;
+            };
+
+            let should_replace = match &best_manifold {
+                Some(current_manifold) => {
+                    manifold.get_penetration_depth() < current_manifold.get_penetration_depth()
+                }
+                None => true,
+            };
+
+            if should_replace {
+                best_manifold = Some(manifold);
+            }
+        }
+    }
+
+    best_manifold
+}
+
 fn get_support_point(polygon: &[Vec2], direction: Vec2) -> Vec2 {
     const SUPPORT_EPSILON: f32 = 0.0001;
 
@@ -200,4 +235,70 @@ fn get_support_point(polygon: &[Vec2], direction: Vec2) -> Vec2 {
     }
 
     support_sum / (support_count as f32)
+}
+
+fn find_reference_edge_index(polygon: &[Vec2], reference_normal: Vec2) -> Option<usize> {
+    if polygon.len() < 2 {
+        return None;
+    }
+
+    let polygon_center = compute_polygon_centroid(polygon);
+    let mut best_dot = f32::NEG_INFINITY;
+    let mut best_edge_index = None;
+
+    for i in 0..polygon.len() {
+        let current = polygon[i];
+        let next = polygon[(i + 1) % polygon.len()];
+
+        let edge = next - current;
+
+        if edge.length_squared() <= f32::EPSILON {
+            continue;
+        }
+
+        let edge_center = (current + next) * 0.5;
+        let direction_to_edge = edge_center - polygon_center;
+        let mut outward_normal = Vec2::new(-edge.y, edge.x).normalize();
+
+        if outward_normal.dot(direction_to_edge) < 0.0 {
+            outward_normal = -outward_normal;
+        }
+
+        let dot = outward_normal.dot(reference_normal);
+
+        if dot > best_dot {
+            best_dot = dot;
+            best_edge_index = Some(i);
+        }
+    }
+
+    best_edge_index
+}
+
+pub fn check_polygon_manifold(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<ContactManifold> {
+    let sat_result = compute_sat_result(polygon1, polygon2)?;
+
+    match sat_result.reference_polygon {
+        ReferencePolygon::Polygon1 => {
+            build_contact_manifold(
+                polygon1,
+                polygon2,
+                sat_result.normal,
+                sat_result.normal,
+                sat_result.penetration_depth,
+                sat_result.reference_edge_index
+            )
+        }
+
+        ReferencePolygon::Polygon2 => {
+            build_contact_manifold(
+                polygon2,
+                polygon1,
+                -sat_result.normal,
+                sat_result.normal,
+                sat_result.penetration_depth,
+                sat_result.reference_edge_index
+            )
+        }
+    }
 }
