@@ -74,7 +74,7 @@ fn draw_bullet_hitbox(bullet: &Bullet, gizmos: &mut Gizmos, shape_library: &Shap
 pub fn draw_wind_vector(mut gizmos: Gizmos, world: Res<SimulationWorld>) {
     let world_size = world.get_size();
     let wind = world.get_physics().get_wind();
-    let arrow_size: f32 = 50.0;
+    let arrow_size: f32 = 500.0;
 
     if wind.is_active() {
         let half_width = world_size.0 / 2.0;

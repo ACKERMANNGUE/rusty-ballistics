@@ -38,7 +38,6 @@ pub fn generate_bullet_at_position_and_velocity(
         position,
         velocity,
         mass,
-        density,
         size,
         moment_of_inertia,
         color,

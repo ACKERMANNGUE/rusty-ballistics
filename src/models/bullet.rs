@@ -4,7 +4,6 @@ pub struct Bullet {
     position: Vec2,
     velocity: Vec2,
     mass: f32,
-    density: f32,
     size: f32,
     moment_of_inertia: f32,
     color: (f32, f32, f32),
@@ -23,7 +22,6 @@ impl Bullet {
         position: Vec2,
         velocity: Vec2,
         mass: f32,
-        density: f32,
         size: f32,
         moment_of_inertia: f32,
         color: (f32, f32, f32),
@@ -36,11 +34,6 @@ impl Bullet {
         assert!(
             mass.is_finite() && mass > 0.0,
             "Bullet mass must be finite and greater than zero."
-        );
-
-        assert!(
-            density.is_finite() && density > 0.0,
-            "Bullet density must be finite and greater than zero."
         );
 
         assert!(
@@ -57,7 +50,6 @@ impl Bullet {
             position,
             velocity,
             mass,
-            density,
             size,
             moment_of_inertia,
             color,
@@ -82,10 +74,6 @@ impl Bullet {
 
     pub fn get_size(&self) -> f32 {
         self.size
-    }
-
-    pub fn get_density(&self) -> f32 {
-        self.density
     }
 
     pub fn get_mass(&self) -> f32 {
