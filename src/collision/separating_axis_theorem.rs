@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    config::EPSILON,
-    geometry::{ polygon::compute_polygon_centroid, projection::project_polygon },
+    collision::contact_manifold::build_contact_manifold_with_incident_filter, config::EPSILON, geometry::{ polygon::compute_polygon_centroid, projection::project_polygon },
 };
 
 use crate::collision::contact_manifold::{ build_contact_manifold, ContactManifold };
@@ -346,25 +345,39 @@ fn check_world_triangle_manifold(
 ) -> Option<ContactManifold> {
     let sat_result = compute_world_triangle_sat_result(triangle_a, triangle_b)?;
 
+    debug_assert!(
+        match sat_result.reference_triangle {
+            ReferenceTriangle::TriangleA => {
+                triangle_a.is_boundary_edge(sat_result.reference_edge_index)
+            }
+            ReferenceTriangle::TriangleB => {
+                triangle_b.is_boundary_edge(sat_result.reference_edge_index)
+            }
+        },
+        "An internal triangulation edge was selected as a reference edge."
+    );
+
     match sat_result.reference_triangle {
         ReferenceTriangle::TriangleA => {
-            build_contact_manifold(
+            build_contact_manifold_with_incident_filter(
                 triangle_a.get_vertices(),
                 triangle_b.get_vertices(),
                 sat_result.normal,
                 sat_result.normal,
                 sat_result.penetration_depth,
-                sat_result.reference_edge_index
+                sat_result.reference_edge_index,
+                Some(triangle_b.get_boundary_edges())
             )
         }
         ReferenceTriangle::TriangleB => {
-            build_contact_manifold(
+            build_contact_manifold_with_incident_filter(
                 triangle_b.get_vertices(),
                 triangle_a.get_vertices(),
                 -sat_result.normal,
                 sat_result.normal,
                 sat_result.penetration_depth,
-                sat_result.reference_edge_index
+                sat_result.reference_edge_index,
+                Some(triangle_a.get_boundary_edges())
             )
         }
     }
