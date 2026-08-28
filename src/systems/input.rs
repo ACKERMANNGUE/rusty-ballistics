@@ -1,7 +1,7 @@
 use bevy::{ prelude::* };
 
 use crate::factories::bullet_factory::{
-    generate_bullet_at_position_and_velocity,
+    generate_bullet_at_position_and_velocity_with_rotation,
     generate_random_bullet,
     generate_random_bullet_at_position,
     get_random_shape_name,
@@ -127,7 +127,12 @@ pub fn spawn_bullets_at_mouse_position(
 
     for _ in 0..25 {
         let shape_name = get_random_shape_name(&shape_library);
-        let bullet = generate_random_bullet_at_position(position, &shape_name, &spawn_settings, &shape_library);
+        let bullet = generate_random_bullet_at_position(
+            position,
+            &shape_name,
+            &spawn_settings,
+            &shape_library
+        );
         spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &shape_library, &bullet);
 
         world.add_bullet(bullet);
@@ -179,10 +184,13 @@ pub fn bullet_launcher_input_system(
     if mouse_buttons.just_released(MouseButton::Left) && launcher.is_dragging() {
         let spawn_position = launcher.get_drag_start();
         if let Some(velocity) = launcher.release_drag() {
+            let launch_velocity = velocity * -1.0;
+            let rotation = launch_velocity.to_angle();
             let selected_shape = selected_shape.get_shape_name();
-            let bullet = generate_bullet_at_position_and_velocity(
+            let bullet = generate_bullet_at_position_and_velocity_with_rotation(
                 spawn_position,
-                velocity * -1.0,
+                launch_velocity,
+                rotation,
                 selected_shape,
                 &spawn_settings,
                 &shape_library
@@ -208,8 +216,6 @@ fn draw_drag_line(gizmos: &mut Gizmos, start: Vec2, end: Vec2, max_drag_length: 
     gizmos.line_2d(start, end, Color::srgb(red_intensity, green_intensity, blue_intensity));
 }
 
-pub fn cancel_bullet_launcher_on_egui(
-    mut bullet_launcher: ResMut<BulletLauncher>,
-) {
+pub fn cancel_bullet_launcher_on_egui(mut bullet_launcher: ResMut<BulletLauncher>) {
     bullet_launcher.cancel_drag();
 }

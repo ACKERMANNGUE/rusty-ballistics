@@ -9,9 +9,10 @@ pub fn get_random_shape_name(shape_library: &ShapeLibrary) -> String {
     shape_library.get_random_shape_name().unwrap_or_else(|| "square".to_string())
 }
 
-pub fn generate_bullet_at_position_and_velocity(
+pub fn generate_bullet_at_position_and_velocity_with_rotation(
     position: Vec2,
     velocity: Vec2,
+    rotation: f32,
     shape_name: &str,
     spawn_settings: &BulletSpawnSettings,
     shape_library: &ShapeLibrary
@@ -37,6 +38,7 @@ pub fn generate_bullet_at_position_and_velocity(
     Bullet::new(
         position,
         velocity,
+        rotation,
         mass,
         size,
         moment_of_inertia,
@@ -64,9 +66,10 @@ pub fn generate_random_bullet(
         rand::random::<f32>() * 200.0 - 100.0
     );
 
-    generate_bullet_at_position_and_velocity(
+    generate_bullet_at_position_and_velocity_with_rotation(
         position,
         velocity,
+        rand::random::<f32>() * std::f32::consts::TAU,
         shape_name,
         spawn_settings,
         shape_library
@@ -84,9 +87,10 @@ pub fn generate_random_bullet_at_position(
         rand::random::<f32>() * 200.0 - 100.0
     );
 
-    generate_bullet_at_position_and_velocity(
+    generate_bullet_at_position_and_velocity_with_rotation(
         position,
         velocity,
+        rand::random::<f32>() * std::f32::consts::TAU,
         shape_name,
         spawn_settings,
         shape_library

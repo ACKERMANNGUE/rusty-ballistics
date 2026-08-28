@@ -21,6 +21,7 @@ impl Bullet {
     pub fn new(
         position: Vec2,
         velocity: Vec2,
+        rotation: f32,
         mass: f32,
         size: f32,
         moment_of_inertia: f32,
@@ -59,7 +60,7 @@ impl Bullet {
             restitution,
             static_friction,
             dynamic_friction,
-            rotation: 0.0,
+            rotation,
             angular_velocity: 0.0,
         }
     }
