@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
 use crate::{
-    collision::collision_info::CollisionInfo,
     config::EPSILON,
     geometry::{ polygon::compute_polygon_centroid, projection::project_polygon },
 };
@@ -25,24 +24,6 @@ pub(crate) struct SATResult {
 #[derive(Clone, Copy, Debug)]
 struct CollisionAxis {
     normal: Vec2,
-}
-
-pub fn check_polygon_collision(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<CollisionInfo> {
-    let sat_result = compute_sat_result(polygon1, polygon2)?;
-
-    let SATResult {
-        normal,
-        penetration_depth,
-        reference_polygon: _reference_polygon,
-        reference_edge_index: _reference_edge_index,
-    } = sat_result;
-
-    let support_point_a = get_support_point(polygon1, normal);
-    let support_point_b = get_support_point(polygon2, -normal);
-
-    let contact_point = (support_point_a + support_point_b) * 0.5;
-
-    Some(CollisionInfo::new(normal, penetration_depth, contact_point))
 }
 
 pub(crate) fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<SATResult> {
@@ -156,35 +137,6 @@ fn get_polygon_axes(polygon: &[Vec2]) -> Vec<CollisionAxis> {
     }
 
     axes
-}
-
-pub fn check_triangles_collision(
-    triangles_a: &[[Vec2; 3]],
-    triangles_b: &[[Vec2; 3]]
-) -> Option<CollisionInfo> {
-    let mut best_collision: Option<CollisionInfo> = None;
-
-    for triangle_a in triangles_a {
-        for triangle_b in triangles_b {
-            let Some(collision_info) = check_polygon_collision(triangle_a, triangle_b) else {
-                continue;
-            };
-
-            let should_replace = match &best_collision {
-                Some(current_collision) => {
-                    collision_info.get_penetration_depth() <
-                        current_collision.get_penetration_depth()
-                }
-                None => true,
-            };
-
-            if should_replace {
-                best_collision = Some(collision_info);
-            }
-        }
-    }
-
-    best_collision
 }
 
 pub fn check_triangles_manifold(

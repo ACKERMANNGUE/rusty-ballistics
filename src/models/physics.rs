@@ -1,12 +1,10 @@
 use bevy::prelude::Vec2;
 
-use crate::collision::collision_info::CollisionInfo;
 use crate::geometry::projection::project_polygon;
 use crate::models::bullet::{ Bullet };
 use crate::models::wind::Wind;
 use crate::resources::shape_library::ShapeLibrary;
 use crate::geometry::bullet_shape::{ get_bullet_world_shape, get_bullet_world_triangles };
-use crate::collision::separating_axis_theorem::{ check_triangles_collision };
 
 use crate::config::{ ANGULAR_VELOCITY_STOP_THRESHOLD, EPSILON };
 

@@ -126,11 +126,11 @@ cargo run --release
 - [x] Wind system with turbulence
 - [x] Drag-to-launch bullet mechanic
 - [x] Camera movement and zoom controls
-- [ ] Angular damping based on shape
+- [x] Angular damping based on shape
+- [x] Better projectile physics tuning
 - [ ] Static obstacles
 - [ ] Target entities
 - [ ] Iron Dome or defensive turret mechanic
-- [ ] Better projectile physics tuning
 - [ ] Multiple firing modes / weapon types
 - [ ] Audio feedback
 

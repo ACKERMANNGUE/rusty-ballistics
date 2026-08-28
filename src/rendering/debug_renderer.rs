@@ -143,8 +143,8 @@ pub fn draw_contact_manifolds(
     shape_library: Res<ShapeLibrary>,
     mut gizmos: Gizmos
 ) {
-    const CONTACT_RADIUS: f32 = 1.0;
-    const NORMAL_LENGTH: f32 = 20.0;
+    const CONTACT_RADIUS: f32 = 3.0;
+    const NORMAL_LENGTH: f32 = 50.0;
 
     let bullets = world.get_bullets_read();
 
