@@ -279,21 +279,10 @@ impl Physics {
         let inverse_inertia1 = self.get_inverse(moment_of_inertia1);
         let inverse_inertia2 = self.get_inverse(moment_of_inertia2);
 
-        let normal = manifold.get_normal();
-        let contact_points = manifold.get_contacts();
-        if contact_points.is_empty() {
-            return;
-        }
-        let contact_count = contact_points.len() as f32;
-
         let position1 = *bullet1.get_position();
-
         let position2 = *bullet2.get_position();
 
         let normal = manifold.get_normal();
-
-        let penetration_depth = manifold.get_penetration_depth();
-
         let contacts = manifold.get_contacts();
 
         if contacts.is_empty() {

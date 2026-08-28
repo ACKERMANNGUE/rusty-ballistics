@@ -22,13 +22,6 @@ impl AABB {
         self.max
     }
 
-    pub fn overlaps(&self, other: &AABB) -> bool {
-        self.min.x <= other.max.x &&
-            self.max.x >= other.min.x &&
-            self.min.y <= other.max.y &&
-            self.max.y >= other.min.y
-    }
-
     pub fn is_outside_bounds(&self, half_width: f32, half_height: f32) -> bool {
         self.min.x < -half_width ||
             self.max.x > half_width ||

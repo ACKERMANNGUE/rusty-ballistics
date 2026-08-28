@@ -1,6 +1,6 @@
 use bevy::prelude::Vec2;
 
-use crate::{ config::EPSILON, geometry::polygon::{ self, compute_polygon_centroid } };
+use crate::{ config::EPSILON, geometry::polygon::{ compute_polygon_centroid } };
 
 #[derive(Debug, Clone)]
 pub struct ContactManifold {
@@ -29,14 +29,6 @@ impl ContactManifold {
     pub fn get_contacts(&self) -> &[Vec2] {
         &self.contacts
     }
-}
-
-pub(crate) fn find_incident_edge(polygon: &[Vec2], reference_normal: Vec2) -> Option<[Vec2; 2]> {
-    find_incident_edge_filtered(
-        polygon,
-        reference_normal,
-        None // since for convex polygons, all edges are allowed, so we can pass None for the allowed_edges parameter
-    )
 }
 
 fn find_incident_edge_filtered(

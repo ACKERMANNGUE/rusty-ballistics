@@ -21,10 +21,6 @@ impl ShapeTriangle {
     pub fn get_boundary_edges(&self) -> &[bool; 3] {
         &self.boundary_edges
     }
-
-    pub fn is_boundary_edge(&self, edge_index: usize) -> bool {
-        self.boundary_edges[edge_index]
-    }
 }
 
 pub fn build_shape_triangles(
