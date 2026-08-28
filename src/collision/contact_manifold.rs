@@ -56,7 +56,7 @@ pub(crate) fn find_incident_edge(polygon: &[Vec2], reference_normal: Vec2) -> Op
 
         let mut edge_normal = Vec2::new(-edge.y, edge.x).normalize();
 
-        // ensures that the edge normal is pointing towards the polygon center
+        // ensures that the edge normal points outward from the polygon
         if edge_normal.dot(direction_to_edge) < 0.0 {
             edge_normal = -edge_normal;
         }
@@ -182,3 +182,5 @@ pub(crate) fn build_contact_manifold(
 
     Some(ContactManifold::new(collision_normal, penetration_depth, contacts))
 }
+
+

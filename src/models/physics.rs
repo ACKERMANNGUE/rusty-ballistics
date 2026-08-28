@@ -1,15 +1,28 @@
 use bevy::prelude::Vec2;
 
+use crate::geometry::aabb::AABB;
 use crate::geometry::projection::project_polygon;
 use crate::models::bullet::{ Bullet };
 use crate::models::wind::Wind;
 use crate::resources::shape_library::ShapeLibrary;
-use crate::geometry::bullet_shape::{ get_bullet_world_shape, get_bullet_world_triangles };
+
+use crate::collision::narrow_phase::detect_collision_manifolds;
 
 use crate::config::{ ANGULAR_VELOCITY_STOP_THRESHOLD, EPSILON };
 
 use crate::collision::contact_manifold::ContactManifold;
-use crate::collision::separating_axis_theorem::check_triangles_manifold;
+
+use crate::geometry::bullet_shape::{ get_bullet_world_aabb, get_bullet_world_shape };
+
+use std::collections::HashSet;
+
+#[derive(Debug, Clone, Copy)]
+struct CellRange {
+    min_x: usize,
+    max_x: usize,
+    min_y: usize,
+    max_y: usize,
+}
 
 pub struct Physics {
     delta_time: f32,
@@ -65,18 +78,28 @@ impl Physics {
         self.wind.update_turbulence();
 
         for bullet in bullets.iter_mut() {
-            let (new_position, new_velocity, rotation, new_angular_velocity) =
+            let (new_position, new_velocity, new_rotation, new_angular_velocity) =
                 self.compute_new_state(bullet, shape_library);
-
-            if self.is_out_of_bounds(&new_position, world_size, bullet.get_size()) {
-                bullet.set_is_dead(true);
-                continue;
-            }
 
             bullet.set_position(new_position);
             bullet.set_velocity(new_velocity);
-            bullet.set_rotation(rotation);
+            bullet.set_rotation(new_rotation);
             bullet.set_angular_velocity(new_angular_velocity);
+
+            let Some(aabb) = get_bullet_world_aabb(bullet, shape_library) else {
+                println!(
+                    "Warning: Cannot compute AABB for bullet {} with shape '{}'.",
+                    bullet.get_id(),
+                    bullet.get_shape()
+                );
+
+                bullet.set_is_dead(true);
+                continue;
+            };
+
+            if self.is_out_of_bounds(&aabb, world_size) {
+                bullet.set_is_dead(true);
+            }
         }
 
         bullets.retain(|bullet| !bullet.is_dead());
@@ -128,39 +151,31 @@ impl Physics {
         shape_library: &ShapeLibrary
     ) {
         let grid_cell_size = 100.0;
-        let spatial_grid = self.build_spatial_grid(bullets, world_size, grid_cell_size);
-        let (grid_width, grid_height) = self.compute_grid_size(world_size, grid_cell_size);
 
-        for bullet_index in 0..bullets.len() {
-            let position = *bullets[bullet_index].get_position();
-            let (x_index, y_index) = self.compute_x_y_indices(
-                &position,
-                world_size,
-                grid_cell_size
-            );
+        let spatial_grid = self.build_spatial_grid(
+            bullets,
+            world_size,
+            grid_cell_size,
+            shape_library
+        );
 
-            self.check_collisions_in_neighbours(
-                bullet_index,
-                x_index,
-                y_index,
-                grid_width,
-                grid_height,
-                &spatial_grid,
-                bullets,
-                shape_library
-            );
+        let candidate_pairs = self.build_candidate_pairs(&spatial_grid);
+
+        for (bullet_index, other_index) in candidate_pairs {
+            let (left, right) = bullets.split_at_mut(other_index);
+
+            let bullet = &mut left[bullet_index];
+            let other_bullet = &mut right[0];
+
+            if bullet.is_dead() || other_bullet.is_dead() {
+                continue;
+            }
+
+            let manifolds = detect_collision_manifolds(bullet, other_bullet, shape_library);
+            for manifold in &manifolds {
+                self.compute_collision_response(bullet, other_bullet, manifold);
+            }
         }
-    }
-
-    fn compute_x_y_indices(
-        &self,
-        position: &Vec2,
-        world_size: (f32, f32),
-        cell_size: f32
-    ) -> (isize, isize) {
-        let x_index = ((position.x + world_size.0 / 2.0) / cell_size).floor() as isize;
-        let y_index = ((position.y + world_size.1 / 2.0) / cell_size).floor() as isize;
-        (x_index, y_index)
     }
 
     fn compute_grid_size(&self, world_size: (f32, f32), cell_size: f32) -> (usize, usize) {
@@ -194,84 +209,6 @@ impl Physics {
         let (min, max) = project_polygon(perpendicular_axis, &world_shape);
 
         max - min
-    }
-
-    fn check_collisions_in_neighbours(
-        &self,
-        bullet_index: usize,
-        x_index: isize,
-        y_index: isize,
-        grid_width: usize,
-        grid_height: usize,
-        spatial_grid: &Vec<Vec<usize>>,
-        bullets: &mut Vec<Bullet>,
-        shape_library: &ShapeLibrary
-    ) {
-        // use of isize for x_index and y_index allows us to check neighboring cells without worrying about underflow when subtracting 1
-        // compared to using usize which is unsigned and would underflow when subtracting 1 from 0
-        for dy in -1isize..=1 {
-            for dx in -1isize..=1 {
-                let neighbor_x = x_index + dx;
-                let neighbor_y = y_index + dy;
-
-                if neighbor_x < 0 || neighbor_y < 0 {
-                    continue;
-                }
-
-                if (neighbor_x as usize) >= grid_width || (neighbor_y as usize) >= grid_height {
-                    continue;
-                }
-
-                let cell_index = (neighbor_y as usize) * grid_width + (neighbor_x as usize);
-
-                for &other_index in &spatial_grid[cell_index] {
-                    // Avoid self-collision and checking the same pair twice
-                    if other_index <= bullet_index {
-                        continue;
-                    }
-
-                    let (left, right) = bullets.split_at_mut(other_index);
-
-                    let bullet = &mut left[bullet_index];
-                    let other_bullet = &mut right[0];
-
-                    if bullet.is_dead() || other_bullet.is_dead() {
-                        continue;
-                    }
-
-                    let Some(bullet_world_triangles) = get_bullet_world_triangles(
-                        bullet,
-                        shape_library
-                    ) else {
-                        println!(
-                            "Warning: Shape '{}' not found in shape library.",
-                            bullet.get_shape()
-                        );
-                        continue;
-                    };
-
-                    let Some(other_bullet_world_triangles) = get_bullet_world_triangles(
-                        other_bullet,
-                        shape_library
-                    ) else {
-                        println!(
-                            "Warning: Shape '{}' not found in shape library.",
-                            other_bullet.get_shape()
-                        );
-                        continue;
-                    };
-
-                    let Some(manifold) = check_triangles_manifold(
-                        &bullet_world_triangles,
-                        &other_bullet_world_triangles
-                    ) else {
-                        continue;
-                    };
-
-                    self.compute_collision_response(bullet, other_bullet, &manifold);
-                }
-            }
-        }
     }
 
     fn get_inverse(&self, a: f32) -> f32 {
@@ -512,40 +449,96 @@ impl Physics {
 
     fn build_spatial_grid(
         &self,
-        bullets: &Vec<Bullet>,
+        bullets: &[Bullet],
         world_size: (f32, f32),
-        cell_size: f32
+        cell_size: f32,
+        shape_library: &ShapeLibrary
     ) -> Vec<Vec<usize>> {
-        let grid_width = (world_size.0 / cell_size).ceil() as usize;
-        let grid_height = (world_size.1 / cell_size).ceil() as usize;
-        let mut grid = vec![vec![]; grid_width * grid_height];
+        let (grid_width, grid_height) = self.compute_grid_size(world_size, cell_size);
 
-        for (i, bullet) in bullets.iter().enumerate() {
-            let position = bullet.get_position();
-            let x_index = ((position.x + world_size.0 / 2.0) / cell_size).floor() as usize;
-            let y_index = ((position.y + world_size.1 / 2.0) / cell_size).floor() as usize;
+        let mut grid = vec![
+            Vec::new();
+            grid_width * grid_height
+        ];
 
-            if x_index < grid_width && y_index < grid_height {
-                grid[y_index * grid_width + x_index].push(i);
+        for (bullet_index, bullet) in bullets.iter().enumerate() {
+            let Some(aabb) = get_bullet_world_aabb(bullet, shape_library) else {
+                continue;
+            };
+
+            let cell_range = self.compute_aabb_cell_range(
+                &aabb,
+                world_size,
+                cell_size,
+                grid_width,
+                grid_height
+            );
+
+            for y in cell_range.min_y..=cell_range.max_y {
+                for x in cell_range.min_x..=cell_range.max_x {
+                    let cell_index = y * grid_width + x;
+
+                    grid[cell_index].push(bullet_index);
+                }
             }
         }
 
         grid
     }
 
-    fn is_out_of_bounds(
+    fn compute_aabb_cell_range(
         &self,
-        position: &Vec2,
+        aabb: &AABB,
         world_size: (f32, f32),
-        bullet_radius: f32
-    ) -> bool {
-        let half_width = world_size.0 / 2.0;
-        let half_height = world_size.1 / 2.0;
+        cell_size: f32,
+        grid_width: usize,
+        grid_height: usize
+    ) -> CellRange {
+        let half_width = world_size.0 * 0.5;
+        let half_height = world_size.1 * 0.5;
 
-        position.x - bullet_radius < -half_width ||
-            position.x + bullet_radius > half_width ||
-            position.y - bullet_radius < -half_height ||
-            position.y + bullet_radius > half_height
+        let min = aabb.get_min();
+        let max = aabb.get_max();
+
+        let min_x = ((min.x + half_width) / cell_size).floor() as isize;
+        let max_x = ((max.x + half_width) / cell_size).floor() as isize;
+        let min_y = ((min.y + half_height) / cell_size).floor() as isize;
+        let max_y = ((max.y + half_height) / cell_size).floor() as isize;
+
+        CellRange {
+            min_x: min_x.clamp(0, (grid_width as isize) - 1) as usize,
+            max_x: max_x.clamp(0, (grid_width as isize) - 1) as usize,
+            min_y: min_y.clamp(0, (grid_height as isize) - 1) as usize,
+            max_y: max_y.clamp(0, (grid_height as isize) - 1) as usize,
+        }
+    }
+
+    fn build_candidate_pairs(&self, spatial_grid: &[Vec<usize>]) -> HashSet<(usize, usize)> {
+        let mut pairs = HashSet::new();
+
+        for cell in spatial_grid {
+            for first_index in 0..cell.len() {
+                for second_index in first_index + 1..cell.len() {
+                    let bullet_a = cell[first_index];
+                    let bullet_b = cell[second_index];
+
+                    let pair = if bullet_a < bullet_b {
+                        (bullet_a, bullet_b)
+                    } else {
+                        (bullet_b, bullet_a)
+                    };
+
+                    pairs.insert(pair);
+                }
+            }
+        }
+
+        pairs
+    }
+
+    fn is_out_of_bounds(&self, aabb: &AABB, world_size: (f32, f32)) -> bool {
+        let (half_width, half_height) = (world_size.0 * 0.5, world_size.1 * 0.5);
+        aabb.is_outside_bounds(half_width, half_height)
     }
 
     fn correct_penetration(

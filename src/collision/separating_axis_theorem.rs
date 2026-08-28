@@ -38,23 +38,16 @@ pub(crate) fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option
 
     let mut best_axis = Vec2::ZERO;
     let mut reference_polygon = ReferencePolygon::Polygon1;
-
     for axis in &axes_1 {
         let (min_1, max_1) = project_polygon(axis.normal, polygon1);
         let (min_2, max_2) = project_polygon(axis.normal, polygon2);
 
-        if max_1 < min_2 || max_2 < min_1 {
+        let Some(penetration) = compute_interval_penetration(min_1, max_1, min_2, max_2) else {
             return None;
-        }
+        };
 
-        let overlap = max_1.min(max_2) - min_1.max(min_2);
-
-        if overlap <= 0.0 {
-            return None;
-        }
-
-        if overlap < minimum_overlap {
-            minimum_overlap = overlap;
+        if penetration < minimum_overlap {
+            minimum_overlap = penetration;
             best_axis = axis.normal;
             reference_polygon = ReferencePolygon::Polygon1;
         }
@@ -64,18 +57,12 @@ pub(crate) fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option
         let (min_1, max_1) = project_polygon(axis.normal, polygon1);
         let (min_2, max_2) = project_polygon(axis.normal, polygon2);
 
-        if max_1 < min_2 || max_2 < min_1 {
+        let Some(penetration) = compute_interval_penetration(min_1, max_1, min_2, max_2) else {
             return None;
-        }
+        };
 
-        let overlap = max_1.min(max_2) - min_1.max(min_2);
-
-        if overlap <= 0.0 {
-            return None;
-        }
-
-        if overlap < minimum_overlap {
-            minimum_overlap = overlap;
+        if penetration < minimum_overlap {
+            minimum_overlap = penetration;
             best_axis = axis.normal;
             reference_polygon = ReferencePolygon::Polygon2;
         }
@@ -96,7 +83,7 @@ pub(crate) fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option
 
     let reference_edge_index = match reference_polygon {
         ReferencePolygon::Polygon1 => find_reference_edge_index(polygon1, best_axis)?,
-        ReferencePolygon::Polygon2 => find_reference_edge_index(polygon2, best_axis)?,
+        ReferencePolygon::Polygon2 => find_reference_edge_index(polygon2, -best_axis)?,
     };
 
     Some(SATResult {
@@ -109,21 +96,10 @@ pub(crate) fn compute_sat_result(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option
 
 fn get_polygon_axes(polygon: &[Vec2]) -> Vec<CollisionAxis> {
     let mut axes = Vec::with_capacity(polygon.len());
-    let polygon_center = compute_polygon_centroid(polygon);
 
     for i in 0..polygon.len() {
         let current_point = polygon[i];
         let next_point = polygon[(i + 1) % polygon.len()];
-
-        let edge_center = (current_point + next_point) * 0.5;
-        let mut normal = Vec2::new(
-            -(next_point.y - current_point.y),
-            next_point.x - current_point.x
-        ).normalize();
-        let direction_to_center = polygon_center - edge_center;
-        if normal.dot(direction_to_center) < 0.0 {
-            normal = -normal;
-        }
 
         let edge = next_point - current_point;
         if edge.length_squared() <= EPSILON {
@@ -165,28 +141,6 @@ pub fn check_triangles_manifold(
     }
 
     best_manifold
-}
-
-fn get_support_point(polygon: &[Vec2], direction: Vec2) -> Vec2 {
-    const SUPPORT_EPSILON: f32 = 0.0001;
-
-    let max_projection = polygon
-        .iter()
-        .map(|point| point.dot(direction))
-        .fold(f32::NEG_INFINITY, f32::max);
-
-    let mut support_sum = Vec2::ZERO;
-    let mut support_count = 0;
-
-    for &point in polygon {
-        let projection = point.dot(direction);
-        if (max_projection - projection).abs() <= SUPPORT_EPSILON {
-            support_sum += point;
-            support_count += 1;
-        }
-    }
-
-    support_sum / (support_count as f32)
 }
 
 fn find_reference_edge_index(polygon: &[Vec2], reference_normal: Vec2) -> Option<usize> {
@@ -253,4 +207,15 @@ pub fn check_polygon_manifold(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<Co
             )
         }
     }
+}
+
+fn compute_interval_penetration(min_1: f32, max_1: f32, min_2: f32, max_2: f32) -> Option<f32> {
+    let penetration_1_to_2 = max_1 - min_2;
+    let penetration_2_to_1 = max_2 - min_1;
+
+    if penetration_1_to_2 <= 0.0 || penetration_2_to_1 <= 0.0 {
+        return None;
+    }
+
+    Some(penetration_1_to_2.min(penetration_2_to_1))
 }

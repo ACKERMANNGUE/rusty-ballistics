@@ -3,6 +3,8 @@ use bevy::prelude::Vec2;
 use crate::models::bullet::Bullet;
 use crate::resources::shape_library::ShapeLibrary;
 
+use crate::geometry::aabb::AABB;
+
 pub fn get_bullet_world_shape(bullet: &Bullet, shape_library: &ShapeLibrary) -> Option<Vec<Vec2>> {
     let shape_name = bullet.get_shape();
     let Some(shape) = shape_library.get(shape_name) else {
@@ -20,7 +22,10 @@ pub fn get_bullet_world_shape(bullet: &Bullet, shape_library: &ShapeLibrary) -> 
     Some(world_points)
 }
 
-pub fn get_bullet_world_triangles(bullet: &Bullet, shape_library: &ShapeLibrary) -> Option<Vec<[Vec2; 3]>> {
+pub fn get_bullet_world_triangles(
+    bullet: &Bullet,
+    shape_library: &ShapeLibrary
+) -> Option<Vec<[Vec2; 3]>> {
     let shape_name = bullet.get_shape();
     let Some(shape) = shape_library.get(shape_name) else {
         println!("Warning: Shape '{}' not found in shape library.", shape_name);
@@ -53,8 +58,28 @@ pub fn transform_bullet_vertex(local_vertex: Vec2, bullet: &Bullet) -> Vec2 {
 
     let rotated_vertex = Vec2::new(
         scaled_vertex.x * rotation.cos() - scaled_vertex.y * rotation.sin(),
-        scaled_vertex.x * rotation.sin() + scaled_vertex.y * rotation.cos(),
+        scaled_vertex.x * rotation.sin() + scaled_vertex.y * rotation.cos()
     );
 
     rotated_vertex + position
+}
+
+pub fn get_bullet_world_aabb(bullet: &Bullet, shape_library: &ShapeLibrary) -> Option<AABB> {
+    let world_shape = get_bullet_world_shape(bullet, shape_library)?;
+
+    if world_shape.is_empty() {
+        return None;
+    }
+
+    let mut min = Vec2::splat(f32::INFINITY);
+    let mut max = Vec2::splat(f32::NEG_INFINITY);
+
+    for point in world_shape {
+        min.x = min.x.min(point.x);
+        min.y = min.y.min(point.y);
+        max.x = max.x.max(point.x);
+        max.y = max.y.max(point.y);
+    }
+
+    Some(AABB::new(min, max))
 }
