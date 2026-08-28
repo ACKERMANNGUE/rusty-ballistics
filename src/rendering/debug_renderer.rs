@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_egui::egui::debug_text::print;
 
 use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
@@ -119,18 +118,20 @@ fn draw_bullet_triangulation_for_bullet(
     gizmos: &mut Gizmos,
     shape_library: &ShapeLibrary
 ) {
-    let triangles = get_bullet_world_triangles(bullet, shape_library);
-    if let Some(triangles) = triangles {
-        for triangle in triangles {
-            gizmos.line_2d(triangle[0], triangle[1], Color::srgb(0.5, 0.5, 0.5));
-            gizmos.line_2d(triangle[1], triangle[2], Color::srgb(0.5, 0.5, 0.5));
-            gizmos.line_2d(triangle[2], triangle[0], Color::srgb(0.5, 0.5, 0.5));
-        }
-    } else {
+    let Some(triangles) = get_bullet_world_triangles(bullet, shape_library) else {
         println!(
             "Warning: Could not get triangles for bullet with shape '{}'.",
             bullet.get_shape()
         );
+
+        return;
+    };
+
+    for triangle in triangles {
+        let vertices = triangle.get_vertices();
+        gizmos.line_2d(vertices[0], vertices[1], Color::srgb(0.5, 0.5, 0.5));
+        gizmos.line_2d(vertices[1], vertices[2], Color::srgb(0.5, 0.5, 0.5));
+        gizmos.line_2d(vertices[2], vertices[0], Color::srgb(0.5, 0.5, 0.5));
     }
 }
 

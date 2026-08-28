@@ -7,6 +7,8 @@ use crate::{
 
 use crate::collision::contact_manifold::{ build_contact_manifold, ContactManifold };
 
+use crate::geometry::world_triangle::WorldTriangle;
+
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum ReferencePolygon {
     Polygon1,
@@ -116,14 +118,17 @@ fn get_polygon_axes(polygon: &[Vec2]) -> Vec<CollisionAxis> {
 }
 
 pub fn check_triangles_manifold(
-    triangles_a: &[[Vec2; 3]],
-    triangles_b: &[[Vec2; 3]]
+    triangles_a: &[WorldTriangle],
+    triangles_b: &[WorldTriangle]
 ) -> Option<ContactManifold> {
     let mut best_manifold: Option<ContactManifold> = None;
 
     for triangle_a in triangles_a {
         for triangle_b in triangles_b {
-            let Some(manifold) = check_polygon_manifold(triangle_a, triangle_b) else {
+            let Some(manifold) = check_polygon_manifold(
+                triangle_a.get_vertices(),
+                triangle_b.get_vertices()
+            ) else {
                 continue;
             };
 

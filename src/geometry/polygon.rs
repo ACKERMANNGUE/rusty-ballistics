@@ -173,3 +173,18 @@ pub fn compute_polygon_area(vertices: &[Vec2]) -> f32 {
 
     area.abs() * 0.5
 }
+
+pub fn is_polygon_boundary_edge(
+    first_index: usize,
+    second_index: usize,
+    vertex_count: usize
+) -> bool {
+    if vertex_count < 2 {
+        return false;
+    }
+
+    let first_next = (first_index + 1) % vertex_count;
+    let second_next = (second_index + 1) % vertex_count;
+
+    first_next == second_index || second_next == first_index
+}

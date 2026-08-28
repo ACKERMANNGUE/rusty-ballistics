@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use crate::geometry::moment_of_inertia::compute_polygon_inertia_factor;
 use crate::geometry::polygon::{
     compute_polygon_area,
     is_polygon_convex,
@@ -7,12 +8,11 @@ use crate::geometry::polygon::{
     triangulate_ear_clipping,
     validate_polygon,
 };
-
-use crate::geometry::moment_of_inertia::compute_polygon_inertia_factor;
+use crate::geometry::shape_triangle::{ build_shape_triangles, ShapeTriangle };
 
 pub struct Shape {
     vertices: Vec<Vec2>,
-    triangles: Vec<[usize; 3]>,
+    triangles: Vec<ShapeTriangle>,
     is_convex: bool,
     inertia_factor: f32,
     area: f32,
@@ -27,8 +27,12 @@ impl Shape {
         }
 
         normalize_polygon_winding(&mut vertices);
+
         let is_convex = is_polygon_convex(&vertices);
-        let triangles = triangulate_ear_clipping(&vertices);
+
+        let triangle_indices = triangulate_ear_clipping(&vertices);
+        let triangles = build_shape_triangles(triangle_indices, vertices.len());
+
         let inertia_factor = compute_polygon_inertia_factor(&vertices);
         let area = compute_polygon_area(&vertices);
 
@@ -41,11 +45,11 @@ impl Shape {
         }
     }
 
-    pub fn get_vertices(&self) -> &Vec<Vec2> {
+    pub fn get_vertices(&self) -> &[Vec2] {
         &self.vertices
     }
 
-    pub fn get_triangles(&self) -> &Vec<[usize; 3]> {
+    pub fn get_triangles(&self) -> &[ShapeTriangle] {
         &self.triangles
     }
 

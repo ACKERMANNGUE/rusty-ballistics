@@ -45,19 +45,21 @@ fn create_bullet_mesh(bullet: &Bullet, shape_library: &ShapeLibrary) -> Option<M
     let mut positions = Vec::with_capacity(triangles.len() * 3);
 
     for triangle in triangles {
-        let local_a = vertices[triangle[0]] * bullet.get_size();
-        let local_b = vertices[triangle[1]] * bullet.get_size();
-        let local_c = vertices[triangle[2]] * bullet.get_size();
+        let triangle_indices = triangle.get_indices();
+
+        let local_a = vertices[triangle_indices[0]] * bullet.get_size();
+        let local_b = vertices[triangle_indices[1]] * bullet.get_size();
+        let local_c = vertices[triangle_indices[2]] * bullet.get_size();
 
         positions.push([local_a.x, local_a.y, 0.0]);
         positions.push([local_b.x, local_b.y, 0.0]);
         positions.push([local_c.x, local_c.y, 0.0]);
     }
 
-    let mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default()).with_inserted_attribute(
-        Mesh::ATTRIBUTE_POSITION,
-        positions
-    );
+    let mesh = Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::default()
+    ).with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions);
 
     Some(mesh)
 }
