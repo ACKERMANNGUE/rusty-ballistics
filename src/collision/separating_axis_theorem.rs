@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
-    collision::contact_manifold::build_contact_manifold_with_incident_filter, config::EPSILON, geometry::{ polygon::compute_polygon_centroid, projection::project_polygon },
+    collision::contact_manifold::build_contact_manifold_with_incident_filter,
+    config::EPSILON,
+    geometry::{ polygon::compute_polygon_centroid, projection::project_polygon },
 };
 
 use crate::collision::contact_manifold::{ build_contact_manifold, ContactManifold };
@@ -130,11 +132,11 @@ fn get_polygon_axes(polygon: &[Vec2]) -> Vec<CollisionAxis> {
     axes
 }
 
-pub fn check_triangles_manifold(
+pub fn check_triangles_manifolds(
     triangles_a: &[WorldTriangle],
     triangles_b: &[WorldTriangle]
-) -> Option<ContactManifold> {
-    let mut best_manifold: Option<ContactManifold> = None;
+) -> Vec<ContactManifold> {
+    let mut manifolds = Vec::new();
 
     for triangle_a in triangles_a {
         for triangle_b in triangles_b {
@@ -142,20 +144,11 @@ pub fn check_triangles_manifold(
                 continue;
             };
 
-            let should_replace = match &best_manifold {
-                Some(current_manifold) => {
-                    manifold.get_penetration_depth() < current_manifold.get_penetration_depth()
-                }
-                None => true,
-            };
-
-            if should_replace {
-                best_manifold = Some(manifold);
-            }
+            manifolds.push(manifold);
         }
     }
 
-    best_manifold
+    manifolds
 }
 
 fn find_reference_edge_index(polygon: &[Vec2], reference_normal: Vec2) -> Option<usize> {
