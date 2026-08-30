@@ -3,7 +3,7 @@ use bevy::prelude::Vec2;
 use crate::{
     collision::{
         contact_manifold::ContactManifold,
-        rigid_body_math::{compute_contact_velocity, compute_effective_mass, inverse_or_zero},
+        rigid_body_math::{ compute_contact_velocity, compute_effective_mass, inverse_or_zero },
     },
     config::RESTITUTION_VELOCITY_THRESHOLD,
     geometry::vector::perpendicular,
@@ -29,7 +29,7 @@ impl ContactConstraint {
         r2: Vec2,
         normal_mass: f32,
         tangent_mass: f32,
-        restitution_velocity: f32,
+        restitution_velocity: f32
     ) -> Self {
         let tangent = perpendicular(normal);
 
@@ -55,7 +55,7 @@ impl ContactConstraint {
 pub fn build_contact_constraints(
     bullet1: &Bullet,
     bullet2: &Bullet,
-    manifolds: &[ContactManifold],
+    manifolds: &[ContactManifold]
 ) -> Vec<ContactConstraint> {
     let mut contact_constraints = Vec::new();
 
@@ -85,7 +85,7 @@ pub fn build_contact_constraints(
                 inverse_inertia2,
                 r1,
                 r2,
-                normal,
+                normal
             );
 
             let tangent_mass = compute_effective_mass(
@@ -95,19 +95,19 @@ pub fn build_contact_constraints(
                 inverse_inertia2,
                 r1,
                 r2,
-                tangent,
+                tangent
             );
 
             let contact_velocity1 = compute_contact_velocity(
-                *bullet1.get_velocity(),
+                bullet1.get_velocity(),
                 bullet1.get_angular_velocity(),
-                r1,
+                r1
             );
 
             let contact_velocity2 = compute_contact_velocity(
-                *bullet2.get_velocity(),
+                bullet2.get_velocity(),
                 bullet2.get_angular_velocity(),
-                r2,
+                r2
             );
 
             let relative_velocity = contact_velocity2 - contact_velocity1;
@@ -118,14 +118,16 @@ pub fn build_contact_constraints(
                 0.0
             };
 
-            contact_constraints.push(ContactConstraint::new(
-                normal,
-                r1,
-                r2,
-                normal_mass,
-                tangent_mass,
-                restitution_velocity,
-            ));
+            contact_constraints.push(
+                ContactConstraint::new(
+                    normal,
+                    r1,
+                    r2,
+                    normal_mass,
+                    tangent_mass,
+                    restitution_velocity
+                )
+            );
         }
     }
 

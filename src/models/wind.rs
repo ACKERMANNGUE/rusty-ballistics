@@ -19,8 +19,8 @@ impl Wind {
         }
     }
 
-    pub fn get_direction(&self) -> &Vec2 {
-        &self.direction
+    pub fn get_direction(&self) -> Vec2 {
+        self.direction
     }
 
     pub fn get_speed(&self) -> f32 {
@@ -46,8 +46,8 @@ impl Wind {
         self.turbulence.y = self.turbulence.y.clamp(-TURBULENCE_MAX_Y, TURBULENCE_MAX_Y);
     }
 
-    pub fn get_turbulence(&self) -> &Vec2 {
-        &self.turbulence
+    pub fn get_turbulence(&self) -> Vec2 {
+        self.turbulence
     }
 
     pub fn get_direction_degrees(&self) -> f32 {

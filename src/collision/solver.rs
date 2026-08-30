@@ -27,9 +27,7 @@ pub fn solve_collision_manifolds(
     }
 
     let inverse_mass1 = inverse_or_zero(bullet1.get_mass());
-
     let inverse_mass2 = inverse_or_zero(bullet2.get_mass());
-
     let inverse_mass_sum = inverse_mass1 + inverse_mass2;
 
     for manifold in manifolds {
@@ -78,38 +76,30 @@ fn solve_normal_constraint(
     contact_constraint: &mut ContactConstraint,
 ) {
     let inverse_mass1 = inverse_or_zero(bullet1.get_mass());
-
     let inverse_mass2 = inverse_or_zero(bullet2.get_mass());
 
     let inverse_inertia1 = inverse_or_zero(bullet1.get_moment_of_inertia());
-
     let inverse_inertia2 = inverse_or_zero(bullet2.get_moment_of_inertia());
 
-    let velocity1 = *bullet1.get_velocity();
-
-    let velocity2 = *bullet2.get_velocity();
+    let velocity1 = bullet1.get_velocity();
+    let velocity2 = bullet2.get_velocity();
 
     let angular_velocity1 = bullet1.get_angular_velocity();
-
     let angular_velocity2 = bullet2.get_angular_velocity();
 
     let contact_velocity1 =
         compute_contact_velocity(velocity1, angular_velocity1, contact_constraint.r1);
-
     let contact_velocity2 =
         compute_contact_velocity(velocity2, angular_velocity2, contact_constraint.r2);
 
     let relative_velocity = contact_velocity2 - contact_velocity1;
-
     let normal_velocity = relative_velocity.dot(contact_constraint.normal);
 
     let impulse_delta = (contact_constraint.restitution_velocity - normal_velocity)
         * contact_constraint.normal_mass;
 
     let old_accumulated_impulse = contact_constraint.accumulated_normal_impulse;
-
     let new_accumulated_impulse = (old_accumulated_impulse + impulse_delta).max(0.0);
-
     contact_constraint.accumulated_normal_impulse = new_accumulated_impulse;
 
     let applied_impulse_magnitude = new_accumulated_impulse - old_accumulated_impulse;
@@ -121,21 +111,17 @@ fn solve_normal_constraint(
     let impulse = contact_constraint.normal * applied_impulse_magnitude;
 
     let new_velocity1 = velocity1 - impulse * inverse_mass1;
-
     let new_velocity2 = velocity2 + impulse * inverse_mass2;
 
     let new_angular_velocity1 =
         angular_velocity1 - contact_constraint.r1.perp_dot(impulse) * inverse_inertia1;
-
     let new_angular_velocity2 =
         angular_velocity2 + contact_constraint.r2.perp_dot(impulse) * inverse_inertia2;
 
     bullet1.set_velocity(new_velocity1);
-
     bullet2.set_velocity(new_velocity2);
 
     bullet1.set_angular_velocity(new_angular_velocity1);
-
     bullet2.set_angular_velocity(new_angular_velocity2);
 }
 
@@ -152,8 +138,8 @@ fn solve_friction_constraint(
     let inverse_inertia1 = inverse_or_zero(bullet1.get_moment_of_inertia());
     let inverse_inertia2 = inverse_or_zero(bullet2.get_moment_of_inertia());
 
-    let velocity1 = *bullet1.get_velocity();
-    let velocity2 = *bullet2.get_velocity();
+    let velocity1 = bullet1.get_velocity();
+    let velocity2 = bullet2.get_velocity();
 
     let angular_velocity1 = bullet1.get_angular_velocity();
     let angular_velocity2 = bullet2.get_angular_velocity();
@@ -228,8 +214,8 @@ fn correct_penetration(
 
     let correction = manifold.get_normal() * correction_magnitude;
 
-    let position1 = *bullet1.get_position();
-    let position2 = *bullet2.get_position();
+    let position1 = bullet1.get_position();
+    let position2 = bullet2.get_position();
 
     bullet1.set_position(position1 - correction * inverse_mass1);
     bullet2.set_position(position2 + correction * inverse_mass2);

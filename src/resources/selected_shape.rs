@@ -14,7 +14,7 @@ impl SelectedShape {
         }
     }
 
-    pub fn get_shape_name(&self) -> &String {
+    pub fn get_shape_name(&self) -> &str {
         &self.shape_name
     }
 

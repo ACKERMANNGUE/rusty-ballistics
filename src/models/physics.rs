@@ -103,12 +103,12 @@ impl Physics {
         bullet: &Bullet,
         shape_library: &ShapeLibrary,
     ) -> (Vec2, Vec2, f32, f32) {
-        let bullet_velocity = *bullet.get_velocity();
+        let bullet_velocity = bullet.get_velocity();
 
         let air_relative_velocity = if self.wind.is_active() {
             let wind_velocity = self.wind.get_direction() * self.wind.get_speed();
 
-            bullet_velocity - wind_velocity - *self.wind.get_turbulence()
+            bullet_velocity - wind_velocity - self.wind.get_turbulence()
         } else {
             bullet_velocity
         };
@@ -124,7 +124,7 @@ impl Physics {
         let acceleration = gravity_acceleration + drag_acceleration;
 
         let new_velocity = bullet_velocity + acceleration * self.delta_time;
-        let new_position = *bullet.get_position() + new_velocity * self.delta_time;
+        let new_position = bullet.get_position() + new_velocity * self.delta_time;
 
         let old_angular_velocity = bullet.get_angular_velocity();
         let new_angular_velocity = self.compute_angular_velocity(old_angular_velocity);

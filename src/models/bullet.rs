@@ -69,7 +69,7 @@ impl Bullet {
         self.id
     }
 
-    pub fn get_shape(&self) -> &String {
+    pub fn get_shape(&self) -> &str {
         &self.shape
     }
 
@@ -89,16 +89,16 @@ impl Bullet {
         self.color
     }
 
-    pub fn get_position(&self) -> &Vec2 {
-        &self.position
+    pub fn get_position(&self) -> Vec2 {
+        self.position
     }
 
     pub fn set_position(&mut self, position: Vec2) {
         self.position = position;
     }
 
-    pub fn get_velocity(&self) -> &Vec2 {
-        &self.velocity
+    pub fn get_velocity(&self) -> Vec2 {
+        self.velocity
     }
 
     pub fn set_velocity(&mut self, velocity: Vec2) {
