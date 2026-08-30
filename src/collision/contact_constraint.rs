@@ -65,7 +65,7 @@ impl ContactConstraint {
         self.accumulated_tangent_impulse
     }
 
-    pub fn get_resitution_velocity(&self) -> f32 {
+    pub fn get_restitution_velocity(&self) -> f32 {
         self.restitution_velocity
     }
 

@@ -532,7 +532,7 @@ impl Physics {
         let maximum_static_friction = contact_constraint.get_accumulated_normal_impulse() * static_friction;
         let new_impulse;
 
-        if candidate_impulse.abs() < maximum_static_friction {
+        if candidate_impulse.abs() <= maximum_static_friction {
             new_impulse = candidate_impulse;
         } else {
             let maximum_dynamic_friction = contact_constraint.get_accumulated_normal_impulse() * dynamic_friction;
