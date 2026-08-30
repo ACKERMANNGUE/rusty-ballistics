@@ -406,7 +406,7 @@ impl Physics {
         let relative_velocity = contact_velocity2 - contact_velocity1;
 
         let normal_velocity = relative_velocity.dot(contact_constraint.normal);
-        let contact_restitution_velocity = contact_constraint.get_resitution_velocity();
+        let contact_restitution_velocity = contact_constraint.get_restitution_velocity();
         let contact_normal_mass = contact_constraint.get_normal_mass();
 
         let impulse_delta = (contact_restitution_velocity - normal_velocity) * contact_normal_mass;
