@@ -192,10 +192,10 @@ pub fn simulation_ui(
                 .selected_text(selected_shape.get_shape_name())
                 .show_ui(ui, |ui| {
                     for shape_name in shape_library.get_shape_names() {
-                        let is_selected = selected_shape.get_shape_name() == &shape_name;
+                        let is_selected = selected_shape.get_shape_name() == shape_name;
 
-                        if ui.selectable_label(is_selected, &shape_name).clicked() {
-                            selected_shape.set_shape_name(shape_name);
+                        if ui.selectable_label(is_selected, shape_name).clicked() {
+                            selected_shape.set_shape_name(shape_name.to_string());
                         }
                     }
                 });
@@ -239,7 +239,7 @@ pub fn simulation_ui(
                             spawn_settings.get_size(),
                             spawn_settings.get_density()
                         );
-                        
+
                         let scaled_area = mass_properties.get_scaled_area();
                         let derived_mass = mass_properties.get_mass();
                         let moment_of_inertia = mass_properties.get_moment_of_inertia();

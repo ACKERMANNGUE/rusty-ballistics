@@ -26,16 +26,14 @@ impl ShapeLibrary {
         self.shapes.get(name)
     }
 
-    pub fn get_random_shape_name(&self) -> Option<String> {
+    pub fn get_random_shape_name(&self) -> Option<&str> {
         let mut rng = rand::rng();
-
-        self.shapes.keys().choose(&mut rng).cloned()
+        self.shapes.keys().choose(&mut rng).map(String::as_str)
     }
 
-    pub fn get_shape_names(&self) -> Vec<String> {
-        let mut names: Vec<String> = self.shapes.keys().cloned().collect();
-        names.sort();
-
+    pub fn get_shape_names(&self) -> Vec<&str> {
+        let mut names: Vec<&str> = self.shapes.keys().map(String::as_str).collect();
+        names.sort_unstable();
         names
     }
 }

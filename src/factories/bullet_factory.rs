@@ -7,8 +7,8 @@ use crate::resources::shape_library::ShapeLibrary;
 
 use crate::geometry::mass_properties::compute_mass_properties;
 
-pub fn get_random_shape_name(shape_library: &ShapeLibrary) -> String {
-    shape_library.get_random_shape_name().unwrap_or_else(|| "square".to_string())
+pub fn get_random_shape_name(shape_library: &ShapeLibrary) -> &str {
+    shape_library.get_random_shape_name().unwrap_or("square")
 }
 
 pub fn generate_bullet_at_position_and_velocity_with_rotation(
