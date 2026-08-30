@@ -1,11 +1,13 @@
-use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
+use bevy::diagnostic::{ DiagnosticsStore, FrameTimeDiagnosticsPlugin };
 use bevy::prelude::*;
-use bevy_egui::{EguiContexts, egui};
+use bevy_egui::{ EguiContexts, egui };
 
 use crate::models::world::SimulationWorld;
 use crate::resources::bullet_spawn_settings::BulletSpawnSettings;
 use crate::resources::selected_shape::SelectedShape;
 use crate::resources::shape_library::ShapeLibrary;
+
+use crate::geometry::mass_properties::compute_mass_properties;
 
 pub fn simulation_ui(
     mut contexts: EguiContexts,
@@ -15,7 +17,7 @@ pub fn simulation_ui(
     virtual_time: Res<Time<Virtual>>,
     shape_library: Res<ShapeLibrary>,
     mut selected_shape: ResMut<SelectedShape>,
-    mut spawn_settings: ResMut<BulletSpawnSettings>,
+    mut spawn_settings: ResMut<BulletSpawnSettings>
 ) -> Result {
     let context = contexts.ctx_mut()?;
 
@@ -57,7 +59,8 @@ pub fn simulation_ui(
 
     let physics_hz = 1.0 / delta_time;
 
-    egui::Window::new("Rusty Ballistic")
+    egui::Window
+        ::new("Rusty Ballistic")
         .anchor(egui::Align2::RIGHT_TOP, [-12.0, 12.0])
         .default_width(330.0)
         .resizable(false)
@@ -66,16 +69,13 @@ pub fn simulation_ui(
 
             ui.add_space(4.0);
 
-            egui::Grid::new("simulation_info_grid")
+            egui::Grid
+                ::new("simulation_info_grid")
                 .num_columns(2)
                 .spacing([20.0, 6.0])
                 .show(ui, |ui| {
                     ui.label("Status");
-                    ui.label(if virtual_time.is_paused() {
-                        "Paused"
-                    } else {
-                        "Running"
-                    });
+                    ui.label(if virtual_time.is_paused() { "Paused" } else { "Running" });
                     ui.end_row();
 
                     ui.label("Time");
@@ -95,7 +95,8 @@ pub fn simulation_ui(
             ui.heading("World");
             ui.add_space(4.0);
 
-            egui::Grid::new("world_info_grid")
+            egui::Grid
+                ::new("world_info_grid")
                 .num_columns(2)
                 .spacing([20.0, 6.0])
                 .show(ui, |ui| {
@@ -116,7 +117,8 @@ pub fn simulation_ui(
             ui.heading("Physics");
             ui.add_space(4.0);
 
-            egui::Grid::new("physics_info_grid")
+            egui::Grid
+                ::new("physics_info_grid")
                 .num_columns(2)
                 .spacing([20.0, 6.0])
                 .show(ui, |ui| {
@@ -132,15 +134,16 @@ pub fn simulation_ui(
 
                     ui.label("Angular damping");
 
-                    if ui
-                        .add(
-                            egui::Slider::new(&mut angular_damping_value, 0.0..=2.0).suffix(" s⁻¹"),
-                        )
-                        .changed()
+                    if
+                        ui
+                            .add(
+                                egui::Slider
+                                    ::new(&mut angular_damping_value, 0.0..=2.0)
+                                    .suffix(" s⁻¹")
+                            )
+                            .changed()
                     {
-                        world
-                            .get_physics_mut()
-                            .set_angular_damping(angular_damping_value);
+                        world.get_physics_mut().set_angular_damping(angular_damping_value);
                     }
 
                     ui.end_row();
@@ -158,7 +161,8 @@ pub fn simulation_ui(
             ui.heading("Wind");
             ui.add_space(4.0);
 
-            egui::Grid::new("wind_info_grid")
+            egui::Grid
+                ::new("wind_info_grid")
                 .num_columns(2)
                 .spacing([20.0, 6.0])
                 .show(ui, |ui| {
@@ -183,7 +187,8 @@ pub fn simulation_ui(
             ui.heading("Bullet");
             ui.add_space(4.0);
 
-            egui::ComboBox::from_label("Shape")
+            egui::ComboBox
+                ::from_label("Shape")
                 .selected_text(selected_shape.get_shape_name())
                 .show_ui(ui, |ui| {
                     for shape_name in shape_library.get_shape_names() {
@@ -199,7 +204,8 @@ pub fn simulation_ui(
             ui.heading("Bullet Spawn Settings");
             ui.add_space(4.0);
 
-            egui::Grid::new("bullet_spawn_settings_grid")
+            egui::Grid
+                ::new("bullet_spawn_settings_grid")
                 .num_columns(2)
                 .spacing([20.0, 8.0])
                 .show(ui, |ui| {
@@ -217,10 +223,7 @@ pub fn simulation_ui(
 
                     ui.label("Density");
 
-                    if ui
-                        .add(egui::Slider::new(&mut density, 0.1..=10.0))
-                        .changed()
-                    {
+                    if ui.add(egui::Slider::new(&mut density, 0.1..=10.0)).changed() {
                         spawn_settings.set_density(density);
                     }
 
@@ -231,13 +234,15 @@ pub fn simulation_ui(
                     if let Some(shape) = shape_library.get(selected_shape_name) {
                         let local_area = shape.get_area();
 
-                        let scaled_area = local_area * spawn_settings.get_size().powi(2);
-
-                        let derived_mass = spawn_settings.get_density() * scaled_area;
-
-                        let moment_of_inertia = derived_mass
-                            * spawn_settings.get_size().powi(2)
-                            * shape.get_inertia_factor();
+                        let mass_properties = compute_mass_properties(
+                            shape,
+                            spawn_settings.get_size(),
+                            spawn_settings.get_density()
+                        );
+                        
+                        let scaled_area = mass_properties.get_scaled_area();
+                        let derived_mass = mass_properties.get_mass();
+                        let moment_of_inertia = mass_properties.get_moment_of_inertia();
 
                         ui.label("Local area");
                         ui.label(format!("{local_area:.3}"));
@@ -260,10 +265,7 @@ pub fn simulation_ui(
 
                     ui.label("Restitution");
 
-                    if ui
-                        .add(egui::Slider::new(&mut restitution, 0.0..=1.0))
-                        .changed()
-                    {
+                    if ui.add(egui::Slider::new(&mut restitution, 0.0..=1.0)).changed() {
                         spawn_settings.set_restitution(restitution);
                     }
 
@@ -273,10 +275,7 @@ pub fn simulation_ui(
 
                     ui.label("Static friction");
 
-                    if ui
-                        .add(egui::Slider::new(&mut static_friction, 0.0..=2.0))
-                        .changed()
-                    {
+                    if ui.add(egui::Slider::new(&mut static_friction, 0.0..=2.0)).changed() {
                         spawn_settings.set_static_friction(static_friction);
 
                         if spawn_settings.get_dynamic_friction() > static_friction {
@@ -294,12 +293,15 @@ pub fn simulation_ui(
 
                     ui.label("Dynamic friction");
 
-                    if ui
-                        .add(egui::Slider::new(
-                            &mut dynamic_friction,
-                            0.0..=maximum_dynamic_friction,
-                        ))
-                        .changed()
+                    if
+                        ui
+                            .add(
+                                egui::Slider::new(
+                                    &mut dynamic_friction,
+                                    0.0..=maximum_dynamic_friction
+                                )
+                            )
+                            .changed()
                     {
                         spawn_settings.set_dynamic_friction(dynamic_friction);
                     }
@@ -311,7 +313,8 @@ pub fn simulation_ui(
             ui.heading("Controls");
             ui.add_space(4.0);
 
-            egui::Grid::new("controls_grid")
+            egui::Grid
+                ::new("controls_grid")
                 .num_columns(2)
                 .spacing([20.0, 6.0])
                 .show(ui, |ui| {

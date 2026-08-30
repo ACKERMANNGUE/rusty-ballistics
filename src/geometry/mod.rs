@@ -7,3 +7,4 @@ pub mod shape;
 pub mod shape_triangle;
 pub mod vector;
 pub mod world_triangle;
+pub mod mass_properties;

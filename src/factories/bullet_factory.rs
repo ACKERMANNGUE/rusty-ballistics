@@ -5,6 +5,8 @@ use crate::models::bullet::Bullet;
 use crate::resources::bullet_spawn_settings::BulletSpawnSettings;
 use crate::resources::shape_library::ShapeLibrary;
 
+use crate::geometry::mass_properties::compute_mass_properties;
+
 pub fn get_random_shape_name(shape_library: &ShapeLibrary) -> String {
     shape_library
         .get_random_shape_name()
@@ -35,12 +37,9 @@ pub fn generate_bullet_at_position_and_velocity_with_rotation(
         )
     });
 
-    let local_area = shape.get_area();
-    let scaled_area = local_area * size.powi(2);
-    let mass = density * scaled_area;
-
-    let inertia_factor = shape.get_inertia_factor();
-    let moment_of_inertia = mass * size.powi(2) * inertia_factor;
+    let mass_properties = compute_mass_properties(shape, size, density);
+    let mass = mass_properties.get_mass();
+    let moment_of_inertia = mass_properties.get_moment_of_inertia();
 
     Bullet::new(
         position,
