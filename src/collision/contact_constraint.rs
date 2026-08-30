@@ -8,10 +8,8 @@ use crate::{
 };
 
 pub struct ContactConstraint {
-    pub point: Vec2,
     pub normal: Vec2,
     pub tangent: Vec2,
-    pub penetration_depth: f32,
     pub r1: Vec2,
     pub r2: Vec2,
     pub normal_mass: f32,
@@ -23,9 +21,7 @@ pub struct ContactConstraint {
 
 impl ContactConstraint {
     pub fn new(
-        point: Vec2,
         normal: Vec2,
-        penetration_depth: f32,
         r1: Vec2,
         r2: Vec2,
         normal_mass: f32,
@@ -35,10 +31,8 @@ impl ContactConstraint {
         let tangent = Vec2::new(-normal.y, normal.x);
 
         Self {
-            point,
             normal,
             tangent,
-            penetration_depth,
             r1,
             r2,
             normal_mass,
@@ -154,9 +148,7 @@ pub fn build_contact_constraints(
             };
 
             let contact_constraint = ContactConstraint::new(
-                *contact_point,
                 normal,
-                manifold.get_penetration_depth(),
                 r1,
                 r2,
                 normal_mass,
