@@ -72,24 +72,19 @@ fn create_bullet_mesh(bullet: &Bullet, shape_library: &ShapeLibrary) -> Option<M
     Some(mesh)
 }
 
-pub(crate) fn find_bullet_by_id(bullets: &[Bullet], id: u32) -> Option<&Bullet> {
-    bullets.iter().find(|bullet| bullet.get_id() == id)
-}
-
 pub fn sync_bullet_transforms(
     world: Res<SimulationWorld>,
     mut commands: Commands,
     mut query: Query<(Entity, &BulletEntity, &mut Transform)>,
 ) {
-    let bullets = world.get_bullets_read();
-
     for (entity, bullet_entity, mut transform) in &mut query {
-        let Some(bullet) = find_bullet_by_id(bullets, bullet_entity.get_id()) else {
+        let Some(bullet) = world.get_bullet_by_id(bullet_entity.get_id()) else {
             commands.entity(entity).despawn();
             continue;
         };
 
         let position = bullet.get_position();
+
         transform.translation.x = position.x;
         transform.translation.y = position.y;
         transform.rotation = Quat::from_rotation_z(bullet.get_rotation());

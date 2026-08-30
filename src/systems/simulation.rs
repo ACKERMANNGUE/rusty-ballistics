@@ -4,8 +4,6 @@ use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
 use crate::models::world::SimulationWorld;
 
-use crate::rendering::bullet_renderer::find_bullet_by_id;
-
 use crate::resources::shape_library::ShapeLibrary;
 
 pub fn update_simulation(mut world: ResMut<SimulationWorld>, shape_library: Res<ShapeLibrary>) {
@@ -16,10 +14,8 @@ pub fn record_bullet_trails(
     world: Res<SimulationWorld>,
     mut query: Query<(&BulletEntity, &mut BulletTrail)>,
 ) {
-    let bullets = world.get_bullets_read();
-
     for (bullet_entity, mut trail) in &mut query {
-        let Some(bullet) = find_bullet_by_id(bullets, bullet_entity.get_id()) else {
+        let Some(bullet) = world.get_bullet_by_id(bullet_entity.get_id()) else {
             continue;
         };
 
@@ -34,10 +30,8 @@ pub fn despawn_orphan_bullet_entities(
     mut commands: Commands,
     query: Query<(Entity, &BulletEntity)>,
 ) {
-    let bullets = world.get_bullets_read();
-
     for (entity, bullet_entity) in &query {
-        if find_bullet_by_id(bullets, bullet_entity.get_id()).is_none() {
+        if world.get_bullet_by_id(bullet_entity.get_id()).is_none() {
             commands.entity(entity).despawn();
         }
     }

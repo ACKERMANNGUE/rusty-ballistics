@@ -32,12 +32,16 @@ impl SimulationWorld {
         self.bullets.push(bullet);
     }
 
-    pub fn get_bullets_read(&self) -> &Vec<Bullet> {
+    pub fn get_bullets(&self) -> &[Bullet] {
         &self.bullets
     }
 
-    pub fn get_bullets(&mut self) -> &mut Vec<Bullet> {
-        &mut self.bullets
+    pub fn get_bullet_by_id(&self, id: u32) -> Option<&Bullet> {
+        self.bullets.iter().find(|bullet| bullet.get_id() == id)
+    }
+
+    pub fn clear_bullets(&mut self) {
+        self.bullets.clear();
     }
 
     pub fn get_size(&self) -> (f32, f32) {

@@ -47,7 +47,7 @@ pub fn regenerate_bullets(
         commands.entity(entity).despawn();
     }
 
-    world.get_bullets().clear();
+    world.clear_bullets();
 
     for _ in 0..BULLET_COUNT {
         let shape_name = get_random_shape_name(&shape_library);
@@ -58,7 +58,7 @@ pub fn regenerate_bullets(
         ));
     }
 
-    for bullet in world.get_bullets_read().iter() {
+    for bullet in world.get_bullets() {
         spawn_bullet_entity(
             &mut commands,
             &mut meshes,
@@ -83,7 +83,7 @@ pub fn clear_bullets(
         commands.entity(entity).despawn();
     }
 
-    world.get_bullets().clear();
+    world.clear_bullets();
 }
 
 pub fn toggle_wind(keyboard: Res<ButtonInput<KeyCode>>, mut world: ResMut<SimulationWorld>) {

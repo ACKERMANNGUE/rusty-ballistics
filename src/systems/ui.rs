@@ -27,7 +27,7 @@ pub fn simulation_ui(
     let simulation_time = fixed_time.elapsed_secs_f64();
 
     let world_size = world.get_size();
-    let bullet_count = world.get_bullets_read().len();
+    let bullet_count = world.get_bullets().len();
 
     // extracts the physics parameters in order to avoid the borrow checking
     let (

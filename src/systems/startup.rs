@@ -41,7 +41,7 @@ pub fn setup(
 
     commands.spawn(Camera2d);
 
-    for bullet in world.get_bullets_read().iter() {
+    for bullet in world.get_bullets().iter() {
         spawn_bullet_entity(
             &mut commands,
             &mut meshes,

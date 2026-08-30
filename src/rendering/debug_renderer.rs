@@ -6,7 +6,6 @@ use crate::components::bullet_trail::BulletTrail;
 use crate::geometry::bullet_shape::{get_bullet_world_triangles, transform_bullet_vertex};
 use crate::models::bullet::Bullet;
 use crate::models::world::SimulationWorld;
-use crate::rendering::bullet_renderer::find_bullet_by_id;
 use crate::resources::shape_library::ShapeLibrary;
 
 pub fn draw_world_bounds(mut gizmos: Gizmos, world: Res<SimulationWorld>) {
@@ -23,19 +22,18 @@ pub fn draw_bullet_trails(
     mut commands: Commands,
     query: Query<(Entity, &BulletEntity, &BulletTrail)>,
 ) {
-    let bullets = world.get_bullets_read();
-
     for (entity, bullet_entity, trail) in &query {
         if trail.points.len() < 2 {
             continue;
         }
 
-        let Some(bullet) = find_bullet_by_id(bullets, bullet_entity.get_id()) else {
+        let Some(bullet) = world.get_bullet_by_id(bullet_entity.get_id()) else {
             commands.entity(entity).despawn();
             continue;
         };
 
         let color = bullet.get_color();
+
         gizmos.linestrip_2d(
             trail.points.iter().copied(),
             Color::srgb(color.0, color.1, color.2),
@@ -49,13 +47,12 @@ pub fn display_bullet_hitbox(
     query: Query<&BulletEntity>,
     shape_library: Res<ShapeLibrary>,
 ) {
-    let bullets = world.get_bullets_read();
-
     for bullet_entity in &query {
-        let bullet = find_bullet_by_id(bullets, bullet_entity.get_id());
-        if let Some(bullet) = bullet {
-            draw_bullet_hitbox(bullet, &mut gizmos, &shape_library);
-        }
+        let Some(bullet) = world.get_bullet_by_id(bullet_entity.get_id()) else {
+            continue;
+        };
+
+        draw_bullet_hitbox(bullet, &mut gizmos, &shape_library);
     }
 }
 
@@ -106,13 +103,12 @@ pub fn draw_bullet_triangulation(
     query: Query<&BulletEntity>,
     shape_library: Res<ShapeLibrary>,
 ) {
-    let bullets = world.get_bullets_read();
-
     for bullet_entity in &query {
-        let bullet = find_bullet_by_id(bullets, bullet_entity.get_id());
-        if let Some(bullet) = bullet {
-            draw_bullet_triangulation_for_bullet(bullet, &mut gizmos, &shape_library);
-        }
+        let Some(bullet) = world.get_bullet_by_id(bullet_entity.get_id()) else {
+            continue;
+        };
+
+        draw_bullet_triangulation_for_bullet(bullet, &mut gizmos, &shape_library);
     }
 }
 
@@ -146,7 +142,7 @@ pub fn draw_contact_manifolds(
     const CONTACT_RADIUS: f32 = 3.0;
     const NORMAL_LENGTH: f32 = 50.0;
 
-    let bullets = world.get_bullets_read();
+    let bullets = world.get_bullets();
 
     for first_index in 0..bullets.len() {
         for second_index in first_index + 1..bullets.len() {
