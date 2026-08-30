@@ -25,6 +25,7 @@ const CONTROLS: &[(&str, &str)] = &[
     ("Y", "Toggle wind"),
     ("Mouse wheel", "Zoom camera"),
     ("WASD or Arrow keys", "Move camera"),
+    ("H", "Toggle debug visuals"),    
 ];
 
 #[derive(Debug, Clone, Copy)]

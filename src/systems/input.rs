@@ -19,6 +19,8 @@ use bevy::window::PrimaryWindow;
 
 use crate::systems::bullet_launcher::BulletLauncher;
 
+use crate::resources::debug_visibility::DebugVisibility;
+
 pub fn toggle_pause(keyboard: Res<ButtonInput<KeyCode>>, mut time: ResMut<Time<Virtual>>) {
     if keyboard.just_pressed(KeyCode::Space) {
         if time.is_paused() {
@@ -52,7 +54,7 @@ pub fn regenerate_bullets(
     for _ in 0..BULLET_COUNT {
         let shape_name = get_random_shape_name(&shape_library);
         world.add_bullet(generate_random_bullet(
-            &shape_name,
+            shape_name,
             &spawn_settings,
             &shape_library,
         ));
@@ -137,7 +139,7 @@ pub fn spawn_bullets_at_mouse_position(
         let shape_name = get_random_shape_name(&shape_library);
         let bullet = generate_random_bullet_at_position(
             position,
-            &shape_name,
+            shape_name,
             &spawn_settings,
             &shape_library,
         );
@@ -236,4 +238,15 @@ fn draw_drag_line(gizmos: &mut Gizmos, start: Vec2, end: Vec2, max_drag_length: 
 
 pub fn cancel_bullet_launcher_on_egui(mut bullet_launcher: ResMut<BulletLauncher>) {
     bullet_launcher.cancel_drag();
+}
+
+pub fn toggle_debug_visibility(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut debug_visibility: ResMut<DebugVisibility>,
+) {
+    if !keyboard.just_pressed(KeyCode::KeyH) {
+        return;
+    }
+
+    debug_visibility.toggle();
 }
