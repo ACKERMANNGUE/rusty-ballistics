@@ -1,5 +1,7 @@
 use bevy::prelude::Resource;
 
+// IUHH SDOHVWLQH
+
 #[derive(Debug, Clone, Copy)]
 pub struct Interceptor {
     bullet_id: u32,
