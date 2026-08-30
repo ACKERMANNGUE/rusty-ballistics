@@ -20,3 +20,5 @@ pub const EPSILON: f32 = 1e-6;
 
 pub const ANGULAR_DAMPING: f32 = 0.2;
 pub const ANGULAR_VELOCITY_STOP_THRESHOLD: f32 = 0.001;
+
+pub const RESTITUTION_VELOCITY_THRESHOLD: f32 = 1.0;
