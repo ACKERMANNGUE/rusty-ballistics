@@ -33,7 +33,7 @@ pub fn setup(
     for _ in 0..BULLET_COUNT {
         let shape_name = get_random_shape_name(&shape_library);
         world.add_bullet(generate_random_bullet(
-            &shape_name,
+            shape_name,
             &spawn_settings,
             &shape_library,
         ));

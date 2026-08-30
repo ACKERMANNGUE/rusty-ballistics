@@ -5,7 +5,7 @@ use crate::collision::solver::solve_collision_manifolds;
 use crate::geometry::aabb::AABB;
 use crate::geometry::projection::project_polygon;
 use crate::geometry::vector::perpendicular;
-use crate::models::bullet::Bullet;
+use crate::models::bullet::{ Bullet, ProjectileKind };
 use crate::models::wind::Wind;
 use crate::resources::shape_library::ShapeLibrary;
 
@@ -13,7 +13,7 @@ use crate::collision::narrow_phase::detect_collision_manifolds;
 
 use crate::config::ANGULAR_VELOCITY_STOP_THRESHOLD;
 
-use crate::geometry::bullet_shape::{get_bullet_world_aabb, get_bullet_world_shape};
+use crate::geometry::bullet_shape::{ get_bullet_world_aabb, get_bullet_world_shape };
 
 pub struct Physics {
     delta_time: f32,
@@ -29,7 +29,7 @@ impl Physics {
         air_resistance: f32,
         gravity: f32,
         wind: Wind,
-        angular_damping: f32,
+        angular_damping: f32
     ) -> Self {
         Self {
             delta_time,
@@ -64,7 +64,7 @@ impl Physics {
         &mut self,
         bullets: &mut Vec<Bullet>,
         world_size: (f32, f32),
-        shape_library: &ShapeLibrary,
+        shape_library: &ShapeLibrary
     ) {
         self.wind.update_turbulence();
 
@@ -101,7 +101,7 @@ impl Physics {
     fn compute_new_state(
         &self,
         bullet: &Bullet,
-        shape_library: &ShapeLibrary,
+        shape_library: &ShapeLibrary
     ) -> (Vec2, Vec2, f32, f32) {
         let bullet_velocity = bullet.get_velocity();
 
@@ -113,8 +113,11 @@ impl Physics {
             bullet_velocity
         };
 
-        let projected_width =
-            self.compute_projected_width(bullet, air_relative_velocity, shape_library);
+        let projected_width = self.compute_projected_width(
+            bullet,
+            air_relative_velocity,
+            shape_library
+        );
 
         let reference_width = 1.0;
         let shape_drag_factor = projected_width / reference_width;
@@ -136,7 +139,7 @@ impl Physics {
         &self,
         bullets: &mut Vec<Bullet>,
         world_size: (f32, f32),
-        shape_library: &ShapeLibrary,
+        shape_library: &ShapeLibrary
     ) {
         let candidate_pairs = build_candidate_pairs(bullets, world_size, shape_library);
 
@@ -147,6 +150,13 @@ impl Physics {
             let other_bullet = &mut right[0];
 
             if bullet.is_dead() || other_bullet.is_dead() {
+                continue;
+            }
+
+            if
+                bullet.get_kind() == ProjectileKind::INTERCEPTOR ||
+                other_bullet.get_kind() == ProjectileKind::INTERCEPTOR
+            {
                 continue;
             }
 
@@ -164,7 +174,7 @@ impl Physics {
         &self,
         bullet: &Bullet,
         relative_velocity: Vec2,
-        shape_library: &ShapeLibrary,
+        shape_library: &ShapeLibrary
     ) -> f32 {
         if relative_velocity.length_squared() == 0.0 {
             return 0.0;

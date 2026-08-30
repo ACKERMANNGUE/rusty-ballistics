@@ -1,5 +1,11 @@
 use bevy::prelude::Vec2;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProjectileKind {
+    BULLET,
+    INTERCEPTOR,
+}
+
 pub struct Bullet {
     position: Vec2,
     velocity: Vec2,
@@ -15,6 +21,7 @@ pub struct Bullet {
     dynamic_friction: f32,
     rotation: f32, // in radians
     angular_velocity: f32,
+    kind: ProjectileKind,
 }
 
 impl Bullet {
@@ -31,6 +38,7 @@ impl Bullet {
         restitution: f32,
         static_friction: f32,
         dynamic_friction: f32,
+        kind: ProjectileKind
     ) -> Self {
         assert!(
             mass.is_finite() && mass > 0.0,
@@ -62,7 +70,12 @@ impl Bullet {
             dynamic_friction,
             rotation,
             angular_velocity: 0.0,
+            kind,
         }
+    }
+
+    pub fn get_kind(&self) -> ProjectileKind {
+        self.kind
     }
 
     pub fn get_id(&self) -> u32 {

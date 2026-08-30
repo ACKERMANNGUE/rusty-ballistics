@@ -8,6 +8,7 @@ mod models;
 mod rendering;
 mod resources;
 mod systems;
+mod defense;
 
 use std::path::PathBuf;
 
@@ -15,7 +16,14 @@ use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 use bevy_egui::{ EguiPlugin, EguiPrimaryContextPass };
 
-use config::HZ;
+use config::{
+    DEFENSE_DETECTION_RADIUS,
+    DEFENSE_INTERCEPTOR_SPEED,
+    DEFENSE_LAUNCH_COOLDOWN,
+    DEFENSE_MAXIMUM_ACTIVE_INTERCEPTORS,
+    DEFENSE_PROTECTION_RADIUS,
+    HZ,
+};
 
 use rendering::bullet_renderer::sync_bullet_transforms;
 
@@ -62,6 +70,24 @@ use bevy_egui::input::egui_wants_any_pointer_input;
 
 use resources::debug_visibility::{ debug_visuals_visible, DebugVisibility };
 
+use defense::defense_system::DefenseSystem;
+
+use defense::interceptor::InterceptorRegistry;
+
+use systems::defense::{
+    cleanup_interceptor_registry,
+    launch_interceptor,
+    resolve_interceptions,
+    update_defense_cooldown,
+    update_interceptor_guidance,
+};
+
+use rendering::defense_renderer::{
+    draw_defense_system,
+    draw_detected_threats,
+    draw_interceptor_targets,
+};
+
 fn shapes_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("src")
@@ -82,11 +108,31 @@ fn main() {
         .insert_resource(ShapeLibrary::load(shapes_path()))
         .insert_resource(BulletSpawnSettings::new())
         .insert_resource(DebugVisibility::new())
+        .insert_resource(
+            DefenseSystem::new(
+                Vec2::ZERO,
+                DEFENSE_PROTECTION_RADIUS,
+                DEFENSE_DETECTION_RADIUS,
+                DEFENSE_INTERCEPTOR_SPEED,
+                DEFENSE_LAUNCH_COOLDOWN,
+                DEFENSE_MAXIMUM_ACTIVE_INTERCEPTORS
+            )
+        )
+        .insert_resource(InterceptorRegistry::new())
         .add_systems(Startup, (setup, resize_window))
         .add_systems(EguiPrimaryContextPass, simulation_ui)
         .add_systems(
             FixedUpdate,
-            (update_simulation, despawn_orphan_bullet_entities, record_bullet_trails).chain()
+            (
+                update_defense_cooldown,
+                cleanup_interceptor_registry,
+                launch_interceptor,
+                update_interceptor_guidance,
+                update_simulation,
+                resolve_interceptions,
+                despawn_orphan_bullet_entities,
+                record_bullet_trails,
+            ).chain()
         )
         .add_systems(Update, (
             toggle_pause,
@@ -109,6 +155,9 @@ fn main() {
                     draw_bullet_triangulation,
                     draw_contact_manifolds,
                     draw_world_bounds,
+                    draw_defense_system,
+                    draw_detected_threats,
+                    draw_interceptor_targets,
                 ).run_if(debug_visuals_visible),
             ).chain()
         )

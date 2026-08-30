@@ -40,6 +40,14 @@ impl SimulationWorld {
         self.bullets.iter().find(|bullet| bullet.get_id() == id)
     }
 
+    pub fn get_bullet_by_id_mut(&mut self, id: u32) -> Option<&mut Bullet> {
+        self.bullets.iter_mut().find(|bullet| bullet.get_id() == id)
+    }
+
+    pub fn remove_dead_bullets(&mut self) {
+        self.bullets.retain(|bullet| !bullet.is_dead());
+    }
+
     pub fn clear_bullets(&mut self) {
         self.bullets.clear();
     }
@@ -49,7 +57,6 @@ impl SimulationWorld {
     }
 
     pub fn update(&mut self, shape_library: &ShapeLibrary) {
-        self.physics
-            .update(&mut self.bullets, self.size, shape_library);
+        self.physics.update(&mut self.bullets, self.size, shape_library);
     }
 }
