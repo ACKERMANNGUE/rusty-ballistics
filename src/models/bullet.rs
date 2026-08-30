@@ -30,7 +30,7 @@ impl Bullet {
         shape: String,
         restitution: f32,
         static_friction: f32,
-        dynamic_friction: f32
+        dynamic_friction: f32,
     ) -> Self {
         assert!(
             mass.is_finite() && mass > 0.0,

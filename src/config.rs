@@ -12,7 +12,7 @@ pub const TRAIL_MAX_POINTS: usize = 300;
 
 pub const TURBULENCE_MAX_X: f32 = 0.5;
 pub const TURBULENCE_MAX_Y: f32 = 0.5;
-pub const TURBULENCE_DELTA_MAX: f32 = 0.005; 
+pub const TURBULENCE_DELTA_MAX: f32 = 0.005;
 
 pub const MAX_BULLET_VELOCITY: f32 = 1000.0;
 

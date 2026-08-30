@@ -8,10 +8,7 @@ pub struct AABB {
 
 impl AABB {
     pub fn new(min: Vec2, max: Vec2) -> Self {
-        Self {
-            min,
-            max,
-        }
+        Self { min, max }
     }
 
     pub fn get_min(&self) -> Vec2 {
@@ -23,9 +20,9 @@ impl AABB {
     }
 
     pub fn is_outside_bounds(&self, half_width: f32, half_height: f32) -> bool {
-        self.min.x < -half_width ||
-            self.max.x > half_width ||
-            self.min.y < -half_height ||
-            self.max.y > half_height
+        self.min.x < -half_width
+            || self.max.x > half_width
+            || self.min.y < -half_height
+            || self.max.y > half_height
     }
 }

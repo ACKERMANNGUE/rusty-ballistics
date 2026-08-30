@@ -1,6 +1,9 @@
-use std::f32::EPSILON;
-
 use bevy::prelude::*;
+
+use crate::{
+    config::EPSILON,
+    geometry::vector::{cross_2d, perpendicular},
+};
 
 pub fn signed_area(vertices: &[Vec2]) -> f32 {
     let n = vertices.len();
@@ -15,14 +18,10 @@ pub fn signed_area(vertices: &[Vec2]) -> f32 {
     area / 2.0
 }
 
-pub fn normalize_polygon_winding(vertices: &mut Vec<Vec2>) {
+pub fn normalize_polygon_winding(vertices: &mut [Vec2]) {
     if signed_area(vertices) < 0.0 {
         vertices.reverse();
     }
-}
-
-pub fn cross_2d(a: Vec2, b: Vec2) -> f32 {
-    a.x * b.y - a.y * b.x
 }
 
 pub fn is_convex_vertex(prev: Vec2, curr: Vec2, next: Vec2) -> bool {
@@ -109,7 +108,11 @@ pub fn triangulate_ear_clipping(vertices: &[Vec2]) -> Vec<[usize; 3]> {
         }
     }
 
-    triangles.push([remaining_indices[0], remaining_indices[1], remaining_indices[2]]);
+    triangles.push([
+        remaining_indices[0],
+        remaining_indices[1],
+        remaining_indices[2],
+    ]);
 
     triangles
 }
@@ -150,7 +153,7 @@ pub fn compute_polygon_centroid(vertices: &[Vec2]) -> Vec2 {
 
     signed_area *= 0.5;
 
-    if signed_area.abs() <= f32::EPSILON {
+    if signed_area.abs() <= EPSILON {
         return Vec2::ZERO;
     }
 
@@ -160,24 +163,13 @@ pub fn compute_polygon_centroid(vertices: &[Vec2]) -> Vec2 {
 }
 
 pub fn compute_polygon_area(vertices: &[Vec2]) -> f32 {
-    if vertices.len() < 3 {
-        return 0.0;
-    }
-
-    let mut area = 0.0;
-
-    for i in 0..vertices.len() {
-        let j = (i + 1) % vertices.len();
-        area += cross_2d(vertices[i], vertices[j]);
-    }
-
-    area.abs() * 0.5
+    signed_area(vertices).abs()
 }
 
 pub fn is_polygon_boundary_edge(
     first_index: usize,
     second_index: usize,
-    vertex_count: usize
+    vertex_count: usize,
 ) -> bool {
     if vertex_count < 2 {
         return false;
@@ -187,4 +179,31 @@ pub fn is_polygon_boundary_edge(
     let second_next = (second_index + 1) % vertex_count;
 
     first_next == second_index || second_next == first_index
+}
+
+pub fn compute_outward_edge_normal(polygon: &[Vec2], edge_index: usize) -> Option<Vec2> {
+    if polygon.len() < 3 || edge_index >= polygon.len() {
+        return None;
+    }
+
+    let current = polygon[edge_index];
+    let next = polygon[(edge_index + 1) % polygon.len()];
+
+    let edge = next - current;
+
+    if edge.length_squared() <= EPSILON {
+        return None;
+    }
+
+    let polygon_center = compute_polygon_centroid(polygon);
+    let edge_center = (current + next) * 0.5;
+    let direction_to_edge = edge_center - polygon_center;
+
+    let mut normal = perpendicular(edge).normalize();
+
+    if normal.dot(direction_to_edge) < 0.0 {
+        normal = -normal;
+    }
+
+    Some(normal)
 }

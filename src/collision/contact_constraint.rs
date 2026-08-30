@@ -1,22 +1,25 @@
 use bevy::prelude::Vec2;
 
 use crate::{
-    collision::contact_manifold::ContactManifold,
-    config::{ EPSILON, RESTITUTION_VELOCITY_THRESHOLD },
-    geometry::polygon::cross_2d,
+    collision::{
+        contact_manifold::ContactManifold,
+        rigid_body_math::{compute_contact_velocity, compute_effective_mass, inverse_or_zero},
+    },
+    config::RESTITUTION_VELOCITY_THRESHOLD,
+    geometry::vector::perpendicular,
     models::bullet::Bullet,
 };
 
 pub struct ContactConstraint {
-    pub normal: Vec2,
-    pub tangent: Vec2,
-    pub r1: Vec2,
-    pub r2: Vec2,
-    pub normal_mass: f32,
-    pub tangent_mass: f32,
-    pub accumulated_normal_impulse: f32,
-    pub accumulated_tangent_impulse: f32,
-    pub restitution_velocity: f32,
+    pub(crate) normal: Vec2,
+    pub(crate) tangent: Vec2,
+    pub(crate) r1: Vec2,
+    pub(crate) r2: Vec2,
+    pub(crate) normal_mass: f32,
+    pub(crate) tangent_mass: f32,
+    pub(crate) accumulated_normal_impulse: f32,
+    pub(crate) accumulated_tangent_impulse: f32,
+    pub(crate) restitution_velocity: f32,
 }
 
 impl ContactConstraint {
@@ -26,9 +29,14 @@ impl ContactConstraint {
         r2: Vec2,
         normal_mass: f32,
         tangent_mass: f32,
-        restitution_velocity: f32
+        restitution_velocity: f32,
     ) -> Self {
-        let tangent = Vec2::new(-normal.y, normal.x);
+        let tangent = perpendicular(normal);
+
+        debug_assert!(
+            (normal.length_squared() - 1.0).abs() <= 0.001,
+            "Contact constraint normal must be normalized."
+        );
 
         Self {
             normal,
@@ -42,50 +50,20 @@ impl ContactConstraint {
             restitution_velocity,
         }
     }
-
-    pub fn get_tangent_mass(&self) -> f32 {
-        self.tangent_mass
-    }
-
-    pub fn get_normal_mass(&self) -> f32 {
-        self.normal_mass
-    }
-
-    pub fn get_accumulated_normal_impulse(&self) -> f32 {
-        self.accumulated_normal_impulse
-    }
-
-    pub fn get_accumulated_tangent_impulse(&self) -> f32 {
-        self.accumulated_tangent_impulse
-    }
-
-    pub fn get_restitution_velocity(&self) -> f32 {
-        self.restitution_velocity
-    }
-
-    pub fn set_accumulated_normal_impulse(&mut self, impulse: f32) {
-        self.accumulated_normal_impulse = impulse;
-    }
-
-    pub fn set_accumulated_tangent_impulse(&mut self, impulse: f32) {
-        self.accumulated_tangent_impulse = impulse;
-    }
 }
 
 pub fn build_contact_constraints(
     bullet1: &Bullet,
     bullet2: &Bullet,
-    manifolds: &[ContactManifold]
+    manifolds: &[ContactManifold],
 ) -> Vec<ContactConstraint> {
     let mut contact_constraints = Vec::new();
 
-    let inverse_mass1 = 1.0 / bullet1.get_mass();
-    let inverse_mass2 = 1.0 / bullet2.get_mass();
+    let inverse_mass1 = inverse_or_zero(bullet1.get_mass());
+    let inverse_mass2 = inverse_or_zero(bullet2.get_mass());
 
-    let sum_inverse_mass = inverse_mass1 + inverse_mass2;
-
-    let inverse_inertia1 = 1.0 / bullet1.get_moment_of_inertia();
-    let inverse_inertia2 = 1.0 / bullet2.get_moment_of_inertia();
+    let inverse_inertia1 = inverse_or_zero(bullet1.get_moment_of_inertia());
+    let inverse_inertia2 = inverse_or_zero(bullet2.get_moment_of_inertia());
 
     let position1 = bullet1.get_position();
     let position2 = bullet2.get_position();
@@ -94,49 +72,42 @@ pub fn build_contact_constraints(
 
     for manifold in manifolds {
         let normal = manifold.get_normal();
-        let tangent = Vec2::new(-normal.y, normal.x);
+        let tangent = perpendicular(normal);
 
         for contact_point in manifold.get_contacts() {
             let r1 = contact_point - position1;
             let r2 = contact_point - position2;
 
-            let r1_cross_normal = cross_2d(r1, normal);
-            let r2_cross_normal = cross_2d(r2, normal);
+            let normal_mass = compute_effective_mass(
+                inverse_mass1,
+                inverse_mass2,
+                inverse_inertia1,
+                inverse_inertia2,
+                r1,
+                r2,
+                normal,
+            );
 
-            let normal_denominator =
-                sum_inverse_mass +
-                r1_cross_normal.powi(2) * inverse_inertia1 +
-                r2_cross_normal.powi(2) * inverse_inertia2;
-
-            let normal_mass = if normal_denominator > EPSILON {
-                1.0 / normal_denominator
-            } else {
-                0.0
-            };
-
-            let r1_cross_tangent = cross_2d(r1, tangent);
-            let r2_cross_tangent = cross_2d(r2, tangent);
-
-            let tangent_denominator =
-                sum_inverse_mass +
-                r1_cross_tangent.powi(2) * inverse_inertia1 +
-                r2_cross_tangent.powi(2) * inverse_inertia2;
-
-            let tangent_mass = if tangent_denominator > EPSILON {
-                1.0 / tangent_denominator
-            } else {
-                0.0
-            };
+            let tangent_mass = compute_effective_mass(
+                inverse_mass1,
+                inverse_mass2,
+                inverse_inertia1,
+                inverse_inertia2,
+                r1,
+                r2,
+                tangent,
+            );
 
             let contact_velocity1 = compute_contact_velocity(
                 *bullet1.get_velocity(),
                 bullet1.get_angular_velocity(),
-                r1
+                r1,
             );
+
             let contact_velocity2 = compute_contact_velocity(
                 *bullet2.get_velocity(),
                 bullet2.get_angular_velocity(),
-                r2
+                r2,
             );
 
             let relative_velocity = contact_velocity2 - contact_velocity1;
@@ -147,26 +118,16 @@ pub fn build_contact_constraints(
                 0.0
             };
 
-            let contact_constraint = ContactConstraint::new(
+            contact_constraints.push(ContactConstraint::new(
                 normal,
                 r1,
                 r2,
                 normal_mass,
                 tangent_mass,
-                restitution_velocity
-            );
-            contact_constraints.push(contact_constraint);
+                restitution_velocity,
+            ));
         }
     }
 
     contact_constraints
-}
-
-fn compute_contact_velocity(velocity: Vec2, angular_velocity: f32, r: Vec2) -> Vec2 {
-    let rotational_velocity = angular_velocity_cross_radius(angular_velocity, r);
-    velocity + rotational_velocity
-}
-
-fn angular_velocity_cross_radius(angular_velocity: f32, r: Vec2) -> Vec2 {
-    Vec2::new(-angular_velocity * r.y, angular_velocity * r.x)
 }

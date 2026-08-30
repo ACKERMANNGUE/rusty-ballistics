@@ -25,7 +25,7 @@ impl ShapeTriangle {
 
 pub fn build_shape_triangles(
     triangle_indices: Vec<[usize; 3]>,
-    vertex_count: usize
+    vertex_count: usize,
 ) -> Vec<ShapeTriangle> {
     triangle_indices
         .into_iter()

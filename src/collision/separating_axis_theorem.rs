@@ -1,14 +1,15 @@
 use bevy::prelude::*;
 
 use crate::{
-    collision::contact_manifold::build_contact_manifold_with_incident_filter,
+    collision::contact_manifold::{ContactManifold, build_contact_manifold},
     config::EPSILON,
-    geometry::{ polygon::compute_polygon_centroid, projection::project_polygon },
+    geometry::{
+        polygon::{compute_outward_edge_normal, compute_polygon_centroid},
+        projection::project_polygon,
+        vector::perpendicular,
+        world_triangle::WorldTriangle,
+    },
 };
-
-use crate::collision::contact_manifold::{ build_contact_manifold, ContactManifold };
-
-use crate::geometry::world_triangle::WorldTriangle;
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum ReferencePolygon {
@@ -119,14 +120,14 @@ fn get_polygon_axes(polygon: &[Vec2]) -> Vec<CollisionAxis> {
         let next_point = polygon[(i + 1) % polygon.len()];
 
         let edge = next_point - current_point;
+
         if edge.length_squared() <= EPSILON {
             continue;
         }
 
-        let normal = Vec2::new(-edge.y, edge.x).normalize();
-        axes.push(CollisionAxis {
-            normal,
-        });
+        let normal = perpendicular(edge).normalize();
+
+        axes.push(CollisionAxis { normal });
     }
 
     axes
@@ -134,7 +135,7 @@ fn get_polygon_axes(polygon: &[Vec2]) -> Vec<CollisionAxis> {
 
 pub fn check_triangles_manifolds(
     triangles_a: &[WorldTriangle],
-    triangles_b: &[WorldTriangle]
+    triangles_b: &[WorldTriangle],
 ) -> Vec<ContactManifold> {
     let mut manifolds = Vec::new();
 
@@ -156,27 +157,13 @@ fn find_reference_edge_index(polygon: &[Vec2], reference_normal: Vec2) -> Option
         return None;
     }
 
-    let polygon_center = compute_polygon_centroid(polygon);
     let mut best_dot = f32::NEG_INFINITY;
     let mut best_edge_index = None;
 
     for i in 0..polygon.len() {
-        let current = polygon[i];
-        let next = polygon[(i + 1) % polygon.len()];
-
-        let edge = next - current;
-
-        if edge.length_squared() <= f32::EPSILON {
+        let Some(outward_normal) = compute_outward_edge_normal(polygon, i) else {
             continue;
-        }
-
-        let edge_center = (current + next) * 0.5;
-        let direction_to_edge = edge_center - polygon_center;
-        let mut outward_normal = Vec2::new(-edge.y, edge.x).normalize();
-
-        if outward_normal.dot(direction_to_edge) < 0.0 {
-            outward_normal = -outward_normal;
-        }
+        };
 
         let dot = outward_normal.dot(reference_normal);
 
@@ -193,27 +180,24 @@ pub fn check_polygon_manifold(polygon1: &[Vec2], polygon2: &[Vec2]) -> Option<Co
     let sat_result = compute_sat_result(polygon1, polygon2)?;
 
     match sat_result.reference_polygon {
-        ReferencePolygon::Polygon1 => {
-            build_contact_manifold(
-                polygon1,
-                polygon2,
-                sat_result.normal,
-                sat_result.normal,
-                sat_result.penetration_depth,
-                sat_result.reference_edge_index
-            )
-        }
-
-        ReferencePolygon::Polygon2 => {
-            build_contact_manifold(
-                polygon2,
-                polygon1,
-                -sat_result.normal,
-                sat_result.normal,
-                sat_result.penetration_depth,
-                sat_result.reference_edge_index
-            )
-        }
+        ReferencePolygon::Polygon1 => build_contact_manifold(
+            polygon1,
+            polygon2,
+            sat_result.normal,
+            sat_result.normal,
+            sat_result.penetration_depth,
+            sat_result.reference_edge_index,
+            None,
+        ),
+        ReferencePolygon::Polygon2 => build_contact_manifold(
+            polygon2,
+            polygon1,
+            -sat_result.normal,
+            sat_result.normal,
+            sat_result.penetration_depth,
+            sat_result.reference_edge_index,
+            None,
+        ),
     }
 }
 
@@ -228,34 +212,9 @@ fn compute_interval_penetration(min_1: f32, max_1: f32, min_2: f32, max_2: f32) 
     Some(penetration_1_to_2.min(penetration_2_to_1))
 }
 
-fn compute_outward_edge_normal(polygon: &[Vec2], edge_index: usize) -> Option<Vec2> {
-    if polygon.len() < 3 {
-        return None;
-    }
-
-    let current = polygon[edge_index];
-    let next = polygon[(edge_index + 1) % polygon.len()];
-
-    let edge = next - current;
-    if edge.length_squared() <= EPSILON {
-        return None;
-    }
-
-    let polygon_center = compute_polygon_centroid(polygon);
-    let edge_center = (current + next) * 0.5;
-    let direction_to_edge = edge_center - polygon_center;
-    let mut normal = Vec2::new(-edge.y, edge.x).normalize();
-
-    if normal.dot(direction_to_edge) < 0.0 {
-        normal = -normal;
-    }
-
-    Some(normal)
-}
-
 fn compute_world_triangle_sat_result(
     triangle_a: &WorldTriangle,
-    triangle_b: &WorldTriangle
+    triangle_b: &WorldTriangle,
 ) -> Option<TriangleSATResult> {
     let vertices_a = triangle_a.get_vertices();
     let vertices_b = triangle_b.get_vertices();
@@ -274,7 +233,7 @@ fn compute_world_triangle_sat_result(
             continue;
         }
 
-        let axis = Vec2::new(-edge.y, edge.x).normalize();
+        let axis = perpendicular(edge).normalize();
         let (min_a, max_a) = project_polygon(axis, vertices_a);
         let (min_b, max_b) = project_polygon(axis, vertices_b);
 
@@ -298,7 +257,7 @@ fn compute_world_triangle_sat_result(
             continue;
         }
 
-        let axis = Vec2::new(-edge.y, edge.x).normalize();
+        let axis = perpendicular(edge).normalize();
         let (min_a, max_a) = project_polygon(axis, vertices_a);
         let (min_b, max_b) = project_polygon(axis, vertices_b);
 
@@ -316,12 +275,8 @@ fn compute_world_triangle_sat_result(
     let reference_triangle = best_reference?;
 
     let normal = match reference_triangle {
-        ReferenceTriangle::TriangleA => {
-            compute_outward_edge_normal(vertices_a, best_edge_index)?
-        }
-        ReferenceTriangle::TriangleB => {
-            -compute_outward_edge_normal(vertices_b, best_edge_index)?
-        }
+        ReferenceTriangle::TriangleA => compute_outward_edge_normal(vertices_a, best_edge_index)?,
+        ReferenceTriangle::TriangleB => -compute_outward_edge_normal(vertices_b, best_edge_index)?,
     };
 
     Some(TriangleSATResult {
@@ -334,7 +289,7 @@ fn compute_world_triangle_sat_result(
 
 fn check_world_triangle_manifold(
     triangle_a: &WorldTriangle,
-    triangle_b: &WorldTriangle
+    triangle_b: &WorldTriangle,
 ) -> Option<ContactManifold> {
     let sat_result = compute_world_triangle_sat_result(triangle_a, triangle_b)?;
 
@@ -343,6 +298,7 @@ fn check_world_triangle_manifold(
             ReferenceTriangle::TriangleA => {
                 triangle_a.is_boundary_edge(sat_result.reference_edge_index)
             }
+
             ReferenceTriangle::TriangleB => {
                 triangle_b.is_boundary_edge(sat_result.reference_edge_index)
             }
@@ -351,27 +307,23 @@ fn check_world_triangle_manifold(
     );
 
     match sat_result.reference_triangle {
-        ReferenceTriangle::TriangleA => {
-            build_contact_manifold_with_incident_filter(
-                triangle_a.get_vertices(),
-                triangle_b.get_vertices(),
-                sat_result.normal,
-                sat_result.normal,
-                sat_result.penetration_depth,
-                sat_result.reference_edge_index,
-                Some(triangle_b.get_boundary_edges())
-            )
-        }
-        ReferenceTriangle::TriangleB => {
-            build_contact_manifold_with_incident_filter(
-                triangle_b.get_vertices(),
-                triangle_a.get_vertices(),
-                -sat_result.normal,
-                sat_result.normal,
-                sat_result.penetration_depth,
-                sat_result.reference_edge_index,
-                Some(triangle_a.get_boundary_edges())
-            )
-        }
+        ReferenceTriangle::TriangleA => build_contact_manifold(
+            triangle_a.get_vertices(),
+            triangle_b.get_vertices(),
+            sat_result.normal,
+            sat_result.normal,
+            sat_result.penetration_depth,
+            sat_result.reference_edge_index,
+            Some(triangle_b.get_boundary_edges()),
+        ),
+        ReferenceTriangle::TriangleB => build_contact_manifold(
+            triangle_b.get_vertices(),
+            triangle_a.get_vertices(),
+            -sat_result.normal,
+            sat_result.normal,
+            sat_result.penetration_depth,
+            sat_result.reference_edge_index,
+            Some(triangle_a.get_boundary_edges()),
+        ),
     }
 }

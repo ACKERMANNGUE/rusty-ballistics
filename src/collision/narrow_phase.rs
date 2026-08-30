@@ -1,9 +1,12 @@
 use crate::{
     collision::{
         contact_manifold::ContactManifold,
-        separating_axis_theorem::{ check_polygon_manifold, check_triangles_manifolds },
+        separating_axis_theorem::{check_polygon_manifold, check_triangles_manifolds},
     },
-    geometry::bullet_shape::{ get_bullet_world_shape, get_bullet_world_triangles },
+    geometry::{
+        bullet_shape::{get_bullet_world_shape, get_bullet_world_triangles},
+        vector::perpendicular,
+    },
     models::bullet::Bullet,
     resources::shape_library::ShapeLibrary,
 };
@@ -23,7 +26,7 @@ const CONTACT_DUPLICATE_EPSILON: f32 = 0.001; // maximum distance between two co
 pub fn detect_collision_manifolds(
     bullet_a: &Bullet,
     bullet_b: &Bullet,
-    shape_library: &ShapeLibrary
+    shape_library: &ShapeLibrary,
 ) -> Vec<ContactManifold> {
     let (Some(shape_a), Some(shape_b)) = (
         shape_library.get(bullet_a.get_shape()),
@@ -40,7 +43,9 @@ pub fn detect_collision_manifolds(
             return Vec::new();
         };
 
-        return check_polygon_manifold(&polygon_a, &polygon_b).into_iter().collect();
+        return check_polygon_manifold(&polygon_a, &polygon_b)
+            .into_iter()
+            .collect();
     }
 
     let (Some(triangles_a), Some(triangles_b)) = (
@@ -65,22 +70,16 @@ fn manifolds_are_mergeable(group: &ManifoldGroup, manifold: &ContactManifold) ->
     let maximum_distance_squared = CONTACT_MERGE_DISTANCE * CONTACT_MERGE_DISTANCE;
 
     group.contacts.iter().any(|group_contact| {
-        manifold
-            .get_contacts()
-            .iter()
-            .any(|manifold_contact| {
-                group_contact.distance_squared(*manifold_contact) <= maximum_distance_squared
-            })
+        manifold.get_contacts().iter().any(|manifold_contact| {
+            group_contact.distance_squared(*manifold_contact) <= maximum_distance_squared
+        })
     })
 }
 
 fn add_unique_contact(contacts: &mut Vec<Vec2>, contact: Vec2) {
-    let already_exists = contacts
-        .iter()
-        .any(|existing| {
-            existing.distance_squared(contact) <=
-                CONTACT_DUPLICATE_EPSILON * CONTACT_DUPLICATE_EPSILON
-        });
+    let already_exists = contacts.iter().any(|existing| {
+        existing.distance_squared(contact) <= CONTACT_DUPLICATE_EPSILON * CONTACT_DUPLICATE_EPSILON
+    });
 
     if !already_exists {
         contacts.push(contact);
@@ -92,14 +91,13 @@ fn reduce_contacts(contacts: Vec<Vec2>, normal: Vec2) -> Vec<Vec2> {
         return contacts;
     }
 
-    let tangent = Vec2::new(-normal.y, normal.x);
+    let tangent = perpendicular(normal);
 
     let mut minimum_contact = contacts[0];
     let mut maximum_contact = contacts[0];
     let mut minimum_projection = contacts[0].dot(tangent);
     let mut maximum_projection = minimum_projection;
 
-    // skipping the first contact since we already initialized the min/max with it
     for &contact in contacts.iter().skip(1) {
         let projection = contact.dot(tangent);
 
@@ -114,10 +112,8 @@ fn reduce_contacts(contacts: Vec<Vec2>, normal: Vec2) -> Vec<Vec2> {
         }
     }
 
-    // If the minimum and maximum contacts are very close, we only need one.
-    if
-        minimum_contact.distance_squared(maximum_contact) <=
-        CONTACT_DUPLICATE_EPSILON * CONTACT_DUPLICATE_EPSILON
+    if minimum_contact.distance_squared(maximum_contact)
+        <= CONTACT_DUPLICATE_EPSILON * CONTACT_DUPLICATE_EPSILON
     {
         vec![minimum_contact]
     } else {
@@ -131,11 +127,13 @@ fn merge_contact_manifolds(manifolds: Vec<ContactManifold>) -> Vec<ContactManifo
     for manifold in manifolds {
         let matching_group = groups
             .iter()
-            .position(|group| { manifolds_are_mergeable(group, &manifold) });
+            .position(|group| manifolds_are_mergeable(group, &manifold));
 
         if let Some(group_index) = matching_group {
             let group = &mut groups[group_index];
-            group.penetration_depth = group.penetration_depth.max(manifold.get_penetration_depth());
+            group.penetration_depth = group
+                .penetration_depth
+                .max(manifold.get_penetration_depth());
 
             for &contact in manifold.get_contacts() {
                 add_unique_contact(&mut group.contacts, contact);

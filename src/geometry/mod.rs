@@ -1,8 +1,9 @@
+pub mod aabb;
 pub mod bullet_shape;
+pub mod moment_of_inertia;
+pub mod polygon;
 pub mod projection;
 pub mod shape;
-pub mod polygon;
-pub mod moment_of_inertia;
-pub mod aabb;
 pub mod shape_triangle;
+pub mod vector;
 pub mod world_triangle;

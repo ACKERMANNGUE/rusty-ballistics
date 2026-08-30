@@ -9,7 +9,10 @@ use crate::geometry::aabb::AABB;
 pub fn get_bullet_world_shape(bullet: &Bullet, shape_library: &ShapeLibrary) -> Option<Vec<Vec2>> {
     let shape_name = bullet.get_shape();
     let Some(shape) = shape_library.get(shape_name) else {
-        println!("Warning: Shape '{}' not found in shape library.", shape_name);
+        println!(
+            "Warning: Shape '{}' not found in shape library.",
+            shape_name
+        );
         return None;
     };
 
@@ -25,12 +28,15 @@ pub fn get_bullet_world_shape(bullet: &Bullet, shape_library: &ShapeLibrary) -> 
 
 pub fn get_bullet_world_triangles(
     bullet: &Bullet,
-    shape_library: &ShapeLibrary
+    shape_library: &ShapeLibrary,
 ) -> Option<Vec<WorldTriangle>> {
     let shape_name = bullet.get_shape();
 
     let Some(shape) = shape_library.get(shape_name) else {
-        println!("Warning: Shape '{}' not found in shape library.", shape_name);
+        println!(
+            "Warning: Shape '{}' not found in shape library.",
+            shape_name
+        );
 
         return None;
     };
@@ -64,7 +70,7 @@ pub fn transform_bullet_vertex(local_vertex: Vec2, bullet: &Bullet) -> Vec2 {
 
     let rotated_vertex = Vec2::new(
         scaled_vertex.x * rotation.cos() - scaled_vertex.y * rotation.sin(),
-        scaled_vertex.x * rotation.sin() + scaled_vertex.y * rotation.cos()
+        scaled_vertex.x * rotation.sin() + scaled_vertex.y * rotation.cos(),
     );
 
     rotated_vertex + position

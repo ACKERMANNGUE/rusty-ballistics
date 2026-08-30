@@ -1,10 +1,8 @@
-use bevy::{ prelude::* };
+use bevy::prelude::*;
 
 use crate::factories::bullet_factory::{
-    generate_bullet_at_position_and_velocity_with_rotation,
-    generate_random_bullet,
-    generate_random_bullet_at_position,
-    get_random_shape_name,
+    generate_bullet_at_position_and_velocity_with_rotation, generate_random_bullet,
+    generate_random_bullet_at_position, get_random_shape_name,
 };
 
 use crate::components::bullet_entity::BulletEntity;
@@ -14,7 +12,7 @@ use crate::config::BULLET_COUNT;
 use crate::models::world::SimulationWorld;
 use crate::rendering::bullet_renderer::spawn_bullet_entity;
 use crate::resources::bullet_spawn_settings::BulletSpawnSettings;
-use crate::resources::selected_shape::{ SelectedShape };
+use crate::resources::selected_shape::SelectedShape;
 use crate::resources::shape_library::ShapeLibrary;
 
 use bevy::window::PrimaryWindow;
@@ -39,7 +37,7 @@ pub fn regenerate_bullets(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     shape_library: Res<ShapeLibrary>,
-    spawn_settings: Res<BulletSpawnSettings>
+    spawn_settings: Res<BulletSpawnSettings>,
 ) {
     if !keyboard.just_pressed(KeyCode::KeyR) {
         return;
@@ -53,11 +51,21 @@ pub fn regenerate_bullets(
 
     for _ in 0..BULLET_COUNT {
         let shape_name = get_random_shape_name(&shape_library);
-        world.add_bullet(generate_random_bullet(&shape_name, &spawn_settings, &shape_library));
+        world.add_bullet(generate_random_bullet(
+            &shape_name,
+            &spawn_settings,
+            &shape_library,
+        ));
     }
 
     for bullet in world.get_bullets_read().iter() {
-        spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &shape_library, bullet);
+        spawn_bullet_entity(
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            &shape_library,
+            bullet,
+        );
     }
 }
 
@@ -65,7 +73,7 @@ pub fn clear_bullets(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
     mut world: ResMut<SimulationWorld>,
-    bullet_entities: Query<Entity, With<BulletEntity>>
+    bullet_entities: Query<Entity, With<BulletEntity>>,
 ) {
     if !keyboard.just_pressed(KeyCode::KeyC) {
         return;
@@ -101,7 +109,7 @@ pub fn spawn_bullets_at_mouse_position(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     shape_library: Res<ShapeLibrary>,
-    spawn_settings: Res<BulletSpawnSettings>
+    spawn_settings: Res<BulletSpawnSettings>,
 ) {
     if !mouse.just_pressed(MouseButton::Right) {
         return;
@@ -131,9 +139,15 @@ pub fn spawn_bullets_at_mouse_position(
             position,
             &shape_name,
             &spawn_settings,
-            &shape_library
+            &shape_library,
         );
-        spawn_bullet_entity(&mut commands, &mut meshes, &mut materials, &shape_library, &bullet);
+        spawn_bullet_entity(
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            &shape_library,
+            &bullet,
+        );
 
         world.add_bullet(bullet);
     }
@@ -151,15 +165,15 @@ pub fn bullet_launcher_input_system(
     mut gizmos: Gizmos,
     shape_library: Res<ShapeLibrary>,
     selected_shape: Res<SelectedShape>,
-    spawn_settings: Res<BulletSpawnSettings>
+    spawn_settings: Res<BulletSpawnSettings>,
 ) {
     let (camera, camera_transform) = *camera;
 
-    let mouse_world_position = window
-        .cursor_position()
-        .and_then(|cursor_position| {
-            camera.viewport_to_world_2d(camera_transform, cursor_position).ok()
-        });
+    let mouse_world_position = window.cursor_position().and_then(|cursor_position| {
+        camera
+            .viewport_to_world_2d(camera_transform, cursor_position)
+            .ok()
+    });
 
     if mouse_buttons.just_pressed(MouseButton::Left) {
         if let Some(position) = mouse_world_position {
@@ -177,7 +191,7 @@ pub fn bullet_launcher_input_system(
             &mut gizmos,
             launcher.get_drag_start(),
             launcher.get_drag_end(),
-            launcher.get_max_drag_length()
+            launcher.get_max_drag_length(),
         );
     }
 
@@ -193,14 +207,14 @@ pub fn bullet_launcher_input_system(
                 rotation,
                 selected_shape,
                 &spawn_settings,
-                &shape_library
+                &shape_library,
             );
             spawn_bullet_entity(
                 &mut commands,
                 &mut meshes,
                 &mut materials,
                 &shape_library,
-                &bullet
+                &bullet,
             );
             world.add_bullet(bullet);
         }
@@ -213,7 +227,11 @@ fn draw_drag_line(gizmos: &mut Gizmos, start: Vec2, end: Vec2, max_drag_length: 
     let red_intensity = (drag_length / max_drag_length).clamp(0.0, 1.0);
     let green_intensity = (1.0 - drag_length / max_drag_length).clamp(0.0, 1.0);
     let blue_intensity = 0.5;
-    gizmos.line_2d(start, end, Color::srgb(red_intensity, green_intensity, blue_intensity));
+    gizmos.line_2d(
+        start,
+        end,
+        Color::srgb(red_intensity, green_intensity, blue_intensity),
+    );
 }
 
 pub fn cancel_bullet_launcher_on_egui(mut bullet_launcher: ResMut<BulletLauncher>) {

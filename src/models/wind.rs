@@ -1,6 +1,6 @@
 use bevy::prelude::Vec2;
 
-use crate::config::{ TURBULENCE_DELTA_MAX, TURBULENCE_MAX_X, TURBULENCE_MAX_Y };
+use crate::config::{TURBULENCE_DELTA_MAX, TURBULENCE_MAX_X, TURBULENCE_MAX_Y};
 
 pub struct Wind {
     direction: Vec2,

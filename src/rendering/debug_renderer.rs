@@ -1,19 +1,19 @@
 use bevy::prelude::*;
 
+use crate::collision::narrow_phase::detect_collision_manifolds;
 use crate::components::bullet_entity::BulletEntity;
 use crate::components::bullet_trail::BulletTrail;
-use crate::geometry::bullet_shape::{ get_bullet_world_triangles, transform_bullet_vertex };
+use crate::geometry::bullet_shape::{get_bullet_world_triangles, transform_bullet_vertex};
 use crate::models::bullet::Bullet;
 use crate::models::world::SimulationWorld;
 use crate::rendering::bullet_renderer::find_bullet_by_id;
 use crate::resources::shape_library::ShapeLibrary;
-use crate::collision::narrow_phase::detect_collision_manifolds;
 
 pub fn draw_world_bounds(mut gizmos: Gizmos, world: Res<SimulationWorld>) {
     gizmos.rect_2d(
         Isometry2d::IDENTITY,
         Vec2::new(world.get_size().0, world.get_size().1),
-        Color::srgb(0.8, 0.8, 0.8)
+        Color::srgb(0.8, 0.8, 0.8),
     );
 }
 
@@ -21,7 +21,7 @@ pub fn draw_bullet_trails(
     mut gizmos: Gizmos,
     world: Res<SimulationWorld>,
     mut commands: Commands,
-    query: Query<(Entity, &BulletEntity, &BulletTrail)>
+    query: Query<(Entity, &BulletEntity, &BulletTrail)>,
 ) {
     let bullets = world.get_bullets_read();
 
@@ -36,7 +36,10 @@ pub fn draw_bullet_trails(
         };
 
         let color = bullet.get_color();
-        gizmos.linestrip_2d(trail.points.iter().copied(), Color::srgb(color.0, color.1, color.2));
+        gizmos.linestrip_2d(
+            trail.points.iter().copied(),
+            Color::srgb(color.0, color.1, color.2),
+        );
     }
 }
 
@@ -44,7 +47,7 @@ pub fn display_bullet_hitbox(
     world: Res<SimulationWorld>,
     mut gizmos: Gizmos,
     query: Query<&BulletEntity>,
-    shape_library: Res<ShapeLibrary>
+    shape_library: Res<ShapeLibrary>,
 ) {
     let bullets = world.get_bullets_read();
 
@@ -101,7 +104,7 @@ pub fn draw_bullet_triangulation(
     mut gizmos: Gizmos,
     world: Res<SimulationWorld>,
     query: Query<&BulletEntity>,
-    shape_library: Res<ShapeLibrary>
+    shape_library: Res<ShapeLibrary>,
 ) {
     let bullets = world.get_bullets_read();
 
@@ -116,7 +119,7 @@ pub fn draw_bullet_triangulation(
 fn draw_bullet_triangulation_for_bullet(
     bullet: &Bullet,
     gizmos: &mut Gizmos,
-    shape_library: &ShapeLibrary
+    shape_library: &ShapeLibrary,
 ) {
     let Some(triangles) = get_bullet_world_triangles(bullet, shape_library) else {
         println!(
@@ -138,7 +141,7 @@ fn draw_bullet_triangulation_for_bullet(
 pub fn draw_contact_manifolds(
     world: Res<SimulationWorld>,
     shape_library: Res<ShapeLibrary>,
-    mut gizmos: Gizmos
+    mut gizmos: Gizmos,
 ) {
     const CONTACT_RADIUS: f32 = 3.0;
     const NORMAL_LENGTH: f32 = 50.0;
@@ -160,7 +163,7 @@ pub fn draw_contact_manifolds(
                     gizmos.line_2d(
                         contact,
                         contact + normal * NORMAL_LENGTH,
-                        Color::srgb(1.0, 0.0, 0.0)
+                        Color::srgb(1.0, 0.0, 0.0),
                     );
                 }
             }

@@ -45,6 +45,7 @@ impl SimulationWorld {
     }
 
     pub fn update(&mut self, shape_library: &ShapeLibrary) {
-        self.physics.update(&mut self.bullets, self.size, shape_library);
+        self.physics
+            .update(&mut self.bullets, self.size, shape_library);
     }
 }

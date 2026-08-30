@@ -9,7 +9,9 @@ pub struct SelectedShape {
 
 impl SelectedShape {
     pub fn new() -> Self {
-        Self { shape_name: DEFAULT_SHAPE_NAME.into() }
+        Self {
+            shape_name: DEFAULT_SHAPE_NAME.into(),
+        }
     }
 
     pub fn get_shape_name(&self) -> &String {

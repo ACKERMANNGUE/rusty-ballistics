@@ -14,14 +14,21 @@ pub fn spawn_bullet_entity(
     meshes: &mut Assets<Mesh>,
     materials: &mut Assets<ColorMaterial>,
     shape_library: &ShapeLibrary,
-    bullet: &Bullet
+    bullet: &Bullet,
 ) {
-    let color = Color::srgb(bullet.get_color().0, bullet.get_color().1, bullet.get_color().2);
+    let color = Color::srgb(
+        bullet.get_color().0,
+        bullet.get_color().1,
+        bullet.get_color().2,
+    );
 
     let mesh = match create_bullet_mesh(bullet, shape_library) {
         Some(mesh) => mesh,
         None => {
-            println!("Failed to create shape '{}'. Using circle as fallback.", bullet.get_shape());
+            println!(
+                "Failed to create shape '{}'. Using circle as fallback.",
+                bullet.get_shape()
+            );
 
             Mesh::from(Circle::new(bullet.get_size()))
         }
@@ -58,8 +65,9 @@ fn create_bullet_mesh(bullet: &Bullet, shape_library: &ShapeLibrary) -> Option<M
 
     let mesh = Mesh::new(
         PrimitiveTopology::TriangleList,
-        RenderAssetUsages::default()
-    ).with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+        RenderAssetUsages::default(),
+    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions);
 
     Some(mesh)
 }
@@ -71,7 +79,7 @@ pub(crate) fn find_bullet_by_id(bullets: &[Bullet], id: u32) -> Option<&Bullet> 
 pub fn sync_bullet_transforms(
     world: Res<SimulationWorld>,
     mut commands: Commands,
-    mut query: Query<(Entity, &BulletEntity, &mut Transform)>
+    mut query: Query<(Entity, &BulletEntity, &mut Transform)>,
 ) {
     let bullets = world.get_bullets_read();
 

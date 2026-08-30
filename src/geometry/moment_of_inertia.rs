@@ -1,7 +1,7 @@
 use bevy::prelude::Vec2;
 
-use crate::geometry::polygon::cross_2d;
 use crate::config::EPSILON;
+use crate::geometry::vector::cross_2d;
 
 pub fn compute_polygon_inertia_factor(vertices: &[Vec2]) -> f32 {
     if vertices.len() < 3 {
@@ -17,10 +17,7 @@ pub fn compute_polygon_inertia_factor(vertices: &[Vec2]) -> f32 {
 
         let cross = cross_2d(current, next);
 
-        let quadratic_term =
-            current.length_squared()
-            + current.dot(next)
-            + next.length_squared();
+        let quadratic_term = current.length_squared() + current.dot(next) + next.length_squared();
 
         cross_sum += cross;
         inertia_sum += cross * quadratic_term;
@@ -30,8 +27,7 @@ pub fn compute_polygon_inertia_factor(vertices: &[Vec2]) -> f32 {
         return 0.0;
     }
 
-    let inertia_factor =
-        inertia_sum / (6.0 * cross_sum);
+    let inertia_factor = inertia_sum / (6.0 * cross_sum);
 
     inertia_factor.abs()
 }

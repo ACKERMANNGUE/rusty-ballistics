@@ -12,7 +12,7 @@ const CAMERA_ZOOM_SPEED: f32 = 0.15;
 pub fn camera_movement(
     keyboard: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut camera: Single<(&mut Transform, &Projection), With<Camera2d>>
+    mut camera: Single<(&mut Transform, &Projection), With<Camera2d>>,
 ) {
     let (transform, projection) = &mut *camera;
 
@@ -57,7 +57,7 @@ pub fn camera_movement(
 
 pub fn camera_zoom(
     mouse_scroll: Res<AccumulatedMouseScroll>,
-    mut projection: Single<&mut Projection, With<Camera2d>>
+    mut projection: Single<&mut Projection, With<Camera2d>>,
 ) {
     let Projection::Orthographic(orthographic) = &mut **projection else {
         return;
@@ -76,7 +76,13 @@ pub fn clamp_camera_to_world(mut camera: Single<&mut Transform, With<Camera2d>>)
     let half_world_width = WORLD_SIZE.0 / 2.0;
     let half_world_height = WORLD_SIZE.1 / 2.0;
 
-    camera.translation.x = camera.translation.x.clamp(-half_world_width, half_world_width);
+    camera.translation.x = camera
+        .translation
+        .x
+        .clamp(-half_world_width, half_world_width);
 
-    camera.translation.y = camera.translation.y.clamp(-half_world_height, half_world_height);
+    camera.translation.y = camera
+        .translation
+        .y
+        .clamp(-half_world_height, half_world_height);
 }

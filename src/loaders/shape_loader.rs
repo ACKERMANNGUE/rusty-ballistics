@@ -5,8 +5,8 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-use crate::geometry::shape::Shape;
 use crate::geometry::polygon::compute_polygon_centroid;
+use crate::geometry::shape::Shape;
 
 type RawShapeLibrary = HashMap<String, Vec<[f32; 2]>>;
 
@@ -25,10 +25,8 @@ pub fn load_shapes(path: impl AsRef<Path>) -> Result<HashMap<String, Shape>, Box
 
             let centroid = compute_polygon_centroid(&points);
             // ensure that the shape is centered around the origin by subtracting the centroid from each point
-            let centered_points: Vec<Vec2> = points
-                .into_iter()
-                .map(|point| point - centroid)
-                .collect();
+            let centered_points: Vec<Vec2> =
+                points.into_iter().map(|point| point - centroid).collect();
 
             let shape = Shape::new(centered_points);
 

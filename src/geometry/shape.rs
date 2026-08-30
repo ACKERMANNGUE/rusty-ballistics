@@ -2,13 +2,10 @@ use bevy::prelude::*;
 
 use crate::geometry::moment_of_inertia::compute_polygon_inertia_factor;
 use crate::geometry::polygon::{
-    compute_polygon_area,
-    is_polygon_convex,
-    normalize_polygon_winding,
-    triangulate_ear_clipping,
+    compute_polygon_area, is_polygon_convex, normalize_polygon_winding, triangulate_ear_clipping,
     validate_polygon,
 };
-use crate::geometry::shape_triangle::{ build_shape_triangles, ShapeTriangle };
+use crate::geometry::shape_triangle::{ShapeTriangle, build_shape_triangles};
 
 pub struct Shape {
     vertices: Vec<Vec2>,
