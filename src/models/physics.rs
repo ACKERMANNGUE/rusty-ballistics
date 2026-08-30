@@ -1,5 +1,6 @@
 use bevy::prelude::Vec2;
 
+use crate::collision::contact_constraint::{ContactConstraint, build_contact_constraints};
 use crate::geometry::aabb::AABB;
 use crate::geometry::projection::project_polygon;
 use crate::models::bullet::{ Bullet };
@@ -8,7 +9,7 @@ use crate::resources::shape_library::ShapeLibrary;
 
 use crate::collision::narrow_phase::detect_collision_manifolds;
 
-use crate::config::{ ANGULAR_VELOCITY_STOP_THRESHOLD, EPSILON };
+use crate::config::{ ANGULAR_VELOCITY_STOP_THRESHOLD, EPSILON, SOLVER_ITERATIONS };
 
 use crate::collision::contact_manifold::ContactManifold;
 
@@ -172,9 +173,11 @@ impl Physics {
             }
 
             let manifolds = detect_collision_manifolds(bullet, other_bullet, shape_library);
-            for manifold in &manifolds {
-                self.compute_collision_response(bullet, other_bullet, manifold);
+            if manifolds.is_empty() {
+                continue;
             }
+
+            self.solve_collision_manifolds(bullet, other_bullet, &manifolds);
         }
     }
 
@@ -289,7 +292,7 @@ impl Physics {
             return;
         }
 
-        let contact_count = contacts.len() as f32;
+        let contact_count: f32 = contacts.len() as f32;
 
         let mut new_velocity1 = *bullet1.get_velocity();
         let mut new_velocity2 = *bullet2.get_velocity();
@@ -585,6 +588,117 @@ impl Physics {
             0.0
         } else {
             new_angular_velocity
+        }
+    }
+
+    pub fn solve_normal_constraint(
+        &self,
+        bullet1: &mut Bullet,
+        bullet2: &mut Bullet,
+        contact_constraint: &mut ContactConstraint
+    ) {
+        let inverse_mass1 = self.get_inverse(bullet1.get_mass());
+        let inverse_mass2 = self.get_inverse(bullet2.get_mass());
+
+        let inverse_inertia1 = self.get_inverse(bullet1.get_moment_of_inertia());
+        let inverse_inertia2 = self.get_inverse(bullet2.get_moment_of_inertia());
+
+        let velocity1 = *bullet1.get_velocity();
+        let velocity2 = *bullet2.get_velocity();
+
+        let angular_velocity1 = bullet1.get_angular_velocity();
+        let angular_velocity2 = bullet2.get_angular_velocity();
+
+        let contact_velocity1 = self.get_contact_velocity(
+            velocity1,
+            angular_velocity1,
+            contact_constraint.r1
+        );
+        let contact_velocity2 = self.get_contact_velocity(
+            velocity2,
+            angular_velocity2,
+            contact_constraint.r2
+        );
+
+        let relative_velocity = contact_velocity2 - contact_velocity1;
+
+        let normal_velocity = relative_velocity.dot(contact_constraint.normal);
+        let contact_restitution_velocity = contact_constraint.get_resitution_velocity();
+        let contact_normal_mass = contact_constraint.get_normal_mass();
+
+        let impulse_delta = (contact_restitution_velocity - normal_velocity) * contact_normal_mass;
+
+        let old_accumulated_impulse = contact_constraint.get_accumulated_normal_impulse();
+        let new_accumulated_impulse = (old_accumulated_impulse + impulse_delta).max(0.0);
+
+        contact_constraint.set_accumulated_normal_impulse(new_accumulated_impulse);
+
+        let applied_impulse_magnitude = new_accumulated_impulse - old_accumulated_impulse;
+
+        if applied_impulse_magnitude.abs() <= EPSILON {
+            return;
+        }
+
+        let impulse = contact_constraint.normal * applied_impulse_magnitude;
+
+        let new_velocity1 = velocity1 - impulse * inverse_mass1;
+        let new_velocity2 = velocity2 + impulse * inverse_mass2;
+
+        let new_angular_velocity1 =
+            angular_velocity1 - contact_constraint.r1.perp_dot(impulse) * inverse_inertia1;
+        let new_angular_velocity2 =
+            angular_velocity2 + contact_constraint.r2.perp_dot(impulse) * inverse_inertia2;
+
+        bullet1.set_velocity(new_velocity1);
+        bullet2.set_velocity(new_velocity2);
+
+        bullet1.set_angular_velocity(new_angular_velocity1);
+        bullet2.set_angular_velocity(new_angular_velocity2);
+    }
+
+    fn solve_velocity_constraints(
+        &self,
+        bullet1: &mut Bullet,
+        bullet2: &mut Bullet,
+        constraints: &mut [ContactConstraint]
+    ) {
+        for _ in 0..SOLVER_ITERATIONS {
+            for constraint in constraints.iter_mut() {
+                self.solve_normal_constraint(bullet1, bullet2, constraint);
+            }
+        }
+    }
+
+    fn solve_collision_manifolds(
+        &self,
+        bullet1: &mut Bullet,
+        bullet2: &mut Bullet,
+        manifolds: &[ContactManifold]
+    ) {
+        if manifolds.is_empty() {
+            return;
+        }
+
+        let mut constraints = build_contact_constraints(bullet1, bullet2, manifolds);
+        if constraints.is_empty() {
+            return;
+        }
+
+        self.solve_velocity_constraints(bullet1, bullet2, &mut constraints);
+
+        let inverse_mass1 = self.get_inverse(bullet1.get_mass());
+        let inverse_mass2 = self.get_inverse(bullet2.get_mass());
+        let inverse_mass_sum = inverse_mass1 + inverse_mass2;
+
+        for manifold in manifolds {
+            self.correct_penetration(
+                bullet1,
+                bullet2,
+                manifold,
+                inverse_mass1,
+                inverse_mass2,
+                inverse_mass_sum
+            );
         }
     }
 }

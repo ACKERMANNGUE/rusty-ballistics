@@ -48,6 +48,34 @@ impl ContactConstraint {
             restitution_velocity,
         }
     }
+
+    pub fn get_tangent_mass(&self) -> f32 {
+        self.tangent_mass
+    }
+
+    pub fn get_normal_mass(&self) -> f32 {
+        self.normal_mass
+    }
+
+    pub fn get_accumulated_normal_impulse(&self) -> f32 {
+        self.accumulated_normal_impulse
+    }
+
+    pub fn get_accumulated_tangent_impulse(&self) -> f32 {
+        self.accumulated_tangent_impulse
+    }
+
+    pub fn get_resitution_velocity(&self) -> f32 {
+        self.restitution_velocity
+    }
+
+    pub fn set_accumulated_normal_impulse(&mut self, impulse: f32) {
+        self.accumulated_normal_impulse = impulse;
+    }
+
+    pub fn set_accumulated_tangent_impulse(&mut self, impulse: f32) {
+        self.accumulated_tangent_impulse = impulse;
+    }
 }
 
 pub fn build_contact_constraints(
