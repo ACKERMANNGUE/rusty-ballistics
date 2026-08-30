@@ -14,17 +14,10 @@ pub struct ShapeLibrary {
 impl ShapeLibrary {
     pub fn load(path: impl AsRef<Path>) -> Self {
         let path = path.as_ref();
+
         let shapes = load_shapes(path).unwrap_or_else(|error| {
             panic!("Failed to load shapes from '{}': {}", path.display(), error)
         });
-
-        for (name, shape) in &shapes {
-            println!("Loaded shape '{}': {}", name, shape.get_vertices().len());
-            println!("Triangles: {:?}", shape.get_triangles());
-            println!("Is convex: {}", shape.is_convex());
-            println!("Inertia factor: {}", shape.get_inertia_factor());
-            println!("-----------------------------");
-        }
 
         Self { shapes }
     }
