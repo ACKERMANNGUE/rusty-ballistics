@@ -19,9 +19,7 @@ pub fn record_bullet_trails(
             continue;
         };
 
-        let position = bullet.get_position();
-
-        trail.push(Vec2::new(position.x, position.y));
+        trail.push(bullet.get_position());
     }
 }
 

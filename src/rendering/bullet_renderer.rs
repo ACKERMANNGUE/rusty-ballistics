@@ -34,12 +34,13 @@ pub fn spawn_bullet_entity(
         }
     };
 
+    let position = bullet.get_position();
     commands.spawn((
         BulletEntity::new(bullet.get_id()),
         BulletTrail::new(TRAIL_MAX_POINTS),
         Mesh2d(meshes.add(mesh)),
         MeshMaterial2d(materials.add(color)),
-        Transform::from_xyz(bullet.get_position().x, bullet.get_position().y, 0.0),
+        Transform::from_xyz(position.x, position.y, 0.0),
     ));
 }
 
